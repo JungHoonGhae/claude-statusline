@@ -1,10 +1,10 @@
 #!/bin/bash
 # Claude Statusline — Remote One-Liner Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/junghoon-io/claude-statusline/main/install-remote.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/JungHoonGhae/claude-statusline/main/install-remote.sh | bash
 
 set -e
 
-REPO="junghoon-io/claude-statusline"
+REPO="JungHoonGhae/claude-statusline"
 BRANCH="main"
 RAW_BASE="https://raw.githubusercontent.com/$REPO/$BRANCH"
 

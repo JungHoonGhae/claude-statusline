@@ -79,7 +79,7 @@ curl -fsSL https://raw.githubusercontent.com/junghoon-io/claude-statusline/main/
 ### Clone & install
 
 ```bash
-git clone https://github.com/junghoon-io/claude-statusline.git
+git clone https://github.com/JungHoonGhae/claude-statusline.git
 cd claude-statusline
 bash install.sh
 ```

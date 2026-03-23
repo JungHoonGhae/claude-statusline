@@ -1,6 +1,6 @@
 #!/bin/bash
 # Claude Code Custom Statusline
-# https://github.com/junghoon-io/claude-statusline
+# https://github.com/JungHoonGhae/claude-statusline
 #
 # A rich statusline for Claude Code that shows context usage, rate limits,
 # tool/agent activity, and daily token costs — all in pure bash.
