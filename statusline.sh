@@ -12,35 +12,48 @@
 OS_TYPE="$(uname -s)"
 
 get_mtime() {
-  if [ "$OS_TYPE" = "Darwin" ]; then
-    stat -f %m "$1" 2>/dev/null || echo 0
-  else
-    stat -c %Y "$1" 2>/dev/null || echo 0
-  fi
+  case "$OS_TYPE" in
+    Darwin) stat -f %m "$1" 2>/dev/null || echo 0 ;;
+    MINGW*|MSYS*|CYGWIN*) stat -c %Y "$1" 2>/dev/null || echo 0 ;;
+    *) stat -c %Y "$1" 2>/dev/null || echo 0 ;;
+  esac
 }
 
 parse_iso_to_epoch() {
   local ts=$1
-  if [ "$OS_TYPE" = "Darwin" ]; then
-    TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "$ts" "+%s" 2>/dev/null
-  else
-    TZ=UTC date -d "${ts}" "+%s" 2>/dev/null
-  fi
+  case "$OS_TYPE" in
+    Darwin) TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "$ts" "+%s" 2>/dev/null ;;
+    *) TZ=UTC date -d "${ts}" "+%s" 2>/dev/null ;;
+  esac
 }
 
 get_oauth_token() {
-  if [ "$OS_TYPE" = "Darwin" ]; then
-    security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null \
-      | jq -r '.claudeAiOauth.accessToken // empty'
-  else
-    # Linux: try credentials file, then secret-tool (GNOME Keyring)
-    local cred_file="$HOME/.claude/.credentials.json"
-    if [ -f "$cred_file" ]; then
-      jq -r '.claudeAiOauth.accessToken // empty' "$cred_file" 2>/dev/null
-    elif command -v secret-tool >/dev/null 2>&1; then
-      secret-tool lookup service "Claude Code-credentials" 2>/dev/null \
-        | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null
-    fi
+  local cred_file
+  case "$OS_TYPE" in
+    Darwin)
+      security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null \
+        | jq -r '.claudeAiOauth.accessToken // empty'
+      return
+      ;;
+    MINGW*|MSYS*|CYGWIN*)
+      # Windows (Git Bash / MSYS2 / Cygwin): ~/.claude/.credentials.json
+      cred_file="$HOME/.claude/.credentials.json"
+      if [ ! -f "$cred_file" ] && [ -n "$APPDATA" ]; then
+        cred_file="$APPDATA/Claude/credentials.json"
+      fi
+      if [ -f "$cred_file" ]; then
+        jq -r '.claudeAiOauth.accessToken // empty' "$cred_file" 2>/dev/null
+      fi
+      return
+      ;;
+  esac
+  # Linux: try credentials file, then secret-tool (GNOME Keyring)
+  cred_file="$HOME/.claude/.credentials.json"
+  if [ -f "$cred_file" ]; then
+    jq -r '.claudeAiOauth.accessToken // empty' "$cred_file" 2>/dev/null
+  elif command -v secret-tool >/dev/null 2>&1; then
+    secret-tool lookup service "Claude Code-credentials" 2>/dev/null \
+      | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null
   fi
 }
 

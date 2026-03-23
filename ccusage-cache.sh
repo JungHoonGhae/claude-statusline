@@ -4,11 +4,10 @@
 
 OS_TYPE="$(uname -s)"
 get_mtime() {
-  if [ "$OS_TYPE" = "Darwin" ]; then
-    stat -f %m "$1" 2>/dev/null || echo 0
-  else
-    stat -c %Y "$1" 2>/dev/null || echo 0
-  fi
+  case "$OS_TYPE" in
+    Darwin) stat -f %m "$1" 2>/dev/null || echo 0 ;;
+    *) stat -c %Y "$1" 2>/dev/null || echo 0 ;;
+  esac
 }
 
 CACHE_FILE="/tmp/.claude-ccusage-cache.json"

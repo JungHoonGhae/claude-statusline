@@ -60,7 +60,7 @@ This statusline fixes all of that.
 | **Budget alert** | Configurable daily limit | — |
 | **Compaction warning** | Context threshold alert | — |
 | **Configuration** | Simple KEY=value conf file | JSON config + `/configure` command |
-| **Platform** | macOS & Linux | Cross-platform |
+| **Platform** | macOS, Linux, Windows (Git Bash/WSL) | Cross-platform |
 
 ## Prerequisites
 
@@ -166,10 +166,11 @@ stdout → Claude Code displays
 
 ## Platform support
 
-Works on **macOS** and **Linux**.
+Works on **macOS**, **Linux**, and **Windows** (Git Bash / WSL).
 
 - **macOS**: OAuth token from Keychain (`security` command)
 - **Linux**: OAuth token from `~/.claude/.credentials.json` or GNOME Keyring (`secret-tool`)
+- **Windows**: OAuth token from `~/.claude/.credentials.json` or `%APPDATA%/Claude/credentials.json`. Requires Git Bash, MSYS2, or WSL.
 
 ## Credits
 
