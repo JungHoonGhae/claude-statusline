@@ -1,0 +1,18 @@
+# Claude Statusline Configuration
+# Copy to ~/.claude/statusline.conf and uncomment to customize
+#
+# Or set STATUSLINE_CONF env var to use a different path
+
+# ── Toggle Sections ───────────────────────────────────────────────────────────
+# SHOW_RATE_LIMITS=true     # Session/Weekly/Opus/Sonnet rate limit bars
+# SHOW_TOOLS=true           # Tool activity from transcript
+# SHOW_AGENTS=true          # Agent activity from transcript
+# SHOW_CCUSAGE=true         # Daily/monthly token cost stats (requires ccusage)
+
+# ── Context Thresholds ────────────────────────────────────────────────────────
+# CONTEXT_WARN_PCT=30       # Yellow warning threshold (%)
+# CONTEXT_CRIT_PCT=70       # Red critical threshold + compaction warning (%)
+
+# ── Budget Alert ──────────────────────────────────────────────────────────────
+# DAILY_BUDGET=0            # Daily budget in USD (0 = disabled)
+                            # Shows red warning when exceeded

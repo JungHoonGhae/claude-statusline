@@ -1,0 +1,21 @@
+# OS files
+.DS_Store
+._*
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment/secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Temp files
+tmp/
+*.tmp
