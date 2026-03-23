@@ -1,8 +1,26 @@
-# Claude Code Custom Statusline
+<div align="center">
+  <h1>claude-statusline</h1>
+  <p>Claude Code를 위한 리치 statusline — 순수 bash, 플러그인 불필요.</p>
+</div>
 
-A rich, informative statusline for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — pure bash, zero dependencies beyond `jq`.
+<p align="center">
+  <a href="#installation"><strong>Install</strong></a> ·
+  <a href="#what-it-shows"><strong>Features</strong></a> ·
+  <a href="#configuration"><strong>Config</strong></a> ·
+  <a href="#how-it-works"><strong>How it works</strong></a> ·
+  <a href="#vs-claude-hud"><strong>vs claude-hud</strong></a>
+</p>
 
-![screenshot](./screenshot.png)
+<p align="center">
+  <a href="https://github.com/JungHoonGhae/claude-statusline/stargazers"><img src="https://img.shields.io/github/stars/JungHoonGhae/claude-statusline" alt="GitHub stars" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" /></a>
+  <a href="https://github.com/JungHoonGhae/claude-statusline"><img src="https://img.shields.io/badge/bash-pure-4EAA25.svg?logo=gnubash&logoColor=white" alt="Pure Bash" /></a>
+  <a href="https://github.com/JungHoonGhae/claude-statusline"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue.svg" alt="Platform" /></a>
+</p>
+
+<p align="center">
+  <img src="./screenshot.png" alt="claude-statusline screenshot" width="720" />
+</p>
 
 ## Why?
 
@@ -48,32 +66,12 @@ This statusline fixes all of that.
 | **Context** | < 30% | 30–70% | > 70% |
 | **Rate limit** | > 50% left | 20–50% left | < 20% left |
 
-## vs claude-hud
-
-| | claude-statusline | [claude-hud](https://github.com/jarrodwatts/claude-hud) |
-|---|---|---|
-| **Type** | Pure bash scripts | Node.js/TypeScript plugin |
-| **Install** | One-liner `curl` or copy 2 files | Plugin marketplace |
-| **Dependencies** | `jq` only | Node.js 18+ |
-| **Rate limits** | stdin + OAuth API (model-specific Opus/Sonnet) | stdin only |
-| **Token costs** | Daily/monthly via ccusage | — |
-| **Budget alert** | Configurable daily limit | — |
-| **Compaction warning** | Context threshold alert | — |
-| **Configuration** | Simple KEY=value conf file | JSON config + `/configure` command |
-| **Platform** | macOS, Linux, Windows (Git Bash/WSL) | Cross-platform |
-
-## Prerequisites
-
-- **jq** — `brew install jq` (macOS) / `sudo apt install jq` (Linux)
-- **curl** — pre-installed on most systems
-- **ccusage** (optional) — `npm install -g ccusage` for token cost tracking
-
 ## Installation
 
 ### One-liner install (recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/junghoon-io/claude-statusline/main/install-remote.sh | bash
+curl -fsSL https://raw.githubusercontent.com/JungHoonGhae/claude-statusline/main/install-remote.sh | bash
 ```
 
 ### Clone & install
@@ -84,7 +82,8 @@ cd claude-statusline
 bash install.sh
 ```
 
-### Manual install
+<details>
+<summary><strong>Manual install</strong></summary>
 
 ```bash
 # 1. Copy scripts
@@ -108,6 +107,14 @@ Add to `~/.claude/settings.json`:
 ```
 
 Restart Claude Code.
+
+</details>
+
+### Prerequisites
+
+- **jq** — `brew install jq` (macOS) / `sudo apt install jq` (Linux)
+- **curl** — pre-installed on most systems
+- **ccusage** (optional) — `npm install -g ccusage` for token cost tracking
 
 ## Configuration
 
@@ -140,6 +147,20 @@ DAILY_BUDGET=0
 
 See [statusline.conf.example](./statusline.conf.example) for a fully commented template.
 
+## vs claude-hud
+
+| | claude-statusline | [claude-hud](https://github.com/jarrodwatts/claude-hud) |
+|---|---|---|
+| **Type** | Pure bash scripts | Node.js/TypeScript plugin |
+| **Install** | One-liner `curl` or copy 2 files | Plugin marketplace |
+| **Dependencies** | `jq` only | Node.js 18+ |
+| **Rate limits** | stdin + OAuth API (model-specific Opus/Sonnet) | stdin only |
+| **Token costs** | Daily/monthly via ccusage | — |
+| **Budget alert** | Configurable daily limit | — |
+| **Compaction warning** | Context threshold alert | — |
+| **Configuration** | Simple KEY=value conf file | JSON config + `/configure` command |
+| **Platform** | macOS, Linux, Windows (Git Bash/WSL) | Cross-platform |
+
 ## How it works
 
 ```
@@ -170,13 +191,31 @@ Works on **macOS**, **Linux**, and **Windows** (Git Bash / WSL).
 
 - **macOS**: OAuth token from Keychain (`security` command)
 - **Linux**: OAuth token from `~/.claude/.credentials.json` or GNOME Keyring (`secret-tool`)
-- **Windows**: OAuth token from `~/.claude/.credentials.json` or `%APPDATA%/Claude/credentials.json`. Requires Git Bash, MSYS2, or WSL.
+- **Windows**: OAuth token from `~/.claude/.credentials.json` or `%APPDATA%/Claude/credentials.json`
 
 ## Credits
 
 Inspired by [jarrodwatts/claude-hud](https://github.com/jarrodwatts/claude-hud).
 Token cost tracking powered by [syakoo/ccusage](https://github.com/syakoo/ccusage).
 
+## Support
+
+If this helped your workflow, consider buying me a coffee.
+
+<a href="https://www.buymeacoffee.com/lucas.ghae">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50">
+</a>
+
 ## License
 
 MIT
+
+<p align="center">
+  <a href="https://www.star-history.com/?repos=JungHoonGhae%2Fclaude-statusline&type=date&legend=top-left">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=JungHoonGhae/claude-statusline&type=date&theme=dark&legend=top-left" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=JungHoonGhae/claude-statusline&type=date&legend=top-left" />
+      <img alt="Star History Chart" src="https://api.star-history.com/image?repos=JungHoonGhae/claude-statusline&type=date&legend=top-left" width="600" />
+    </picture>
+  </a>
+</p>
