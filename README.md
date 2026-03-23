@@ -1,6 +1,6 @@
 <div align="center">
   <h1>claude-statusline</h1>
-  <p>Claude Code를 위한 리치 statusline — 순수 bash, 플러그인 불필요.</p>
+  <p>A rich statusline for Claude Code — pure bash, no plugins required.</p>
 </div>
 
 <p align="center">
