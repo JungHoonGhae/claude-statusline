@@ -9,6 +9,5 @@
   "homepage": "https://github.com/JungHoonGhae/claude-statusline",
   "repository": "https://github.com/JungHoonGhae/claude-statusline",
   "license": "MIT",
-  "keywords": ["statusline", "dashboard", "rate-limit", "token-cost", "monitoring"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["statusline", "dashboard", "rate-limit", "token-cost", "monitoring"]
 }
