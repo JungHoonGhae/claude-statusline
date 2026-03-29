@@ -1,0 +1,14 @@
+{
+  "name": "claude-statusline",
+  "version": "1.0.0",
+  "description": "A rich statusline for Claude Code — context, rate limits, tool activity, token costs. Pure bash, no dependencies beyond jq.",
+  "author": {
+    "name": "JungHoon Ghae",
+    "url": "https://github.com/JungHoonGhae"
+  },
+  "homepage": "https://github.com/JungHoonGhae/claude-statusline",
+  "repository": "https://github.com/JungHoonGhae/claude-statusline",
+  "license": "MIT",
+  "keywords": ["statusline", "dashboard", "rate-limit", "token-cost", "monitoring"],
+  "hooks": "./hooks/hooks.json"
+}

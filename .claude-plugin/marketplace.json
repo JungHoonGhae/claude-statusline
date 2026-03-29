@@ -1,0 +1,18 @@
+{
+  "name": "claude-statusline",
+  "owner": {
+    "name": "JungHoon Ghae",
+    "url": "https://github.com/JungHoonGhae"
+  },
+  "plugins": [
+    {
+      "name": "claude-statusline",
+      "source": "./",
+      "description": "A rich statusline for Claude Code — context, rate limits, tool activity, token costs.",
+      "version": "1.0.0",
+      "author": {
+        "name": "JungHoon Ghae"
+      }
+    }
+  ]
+}

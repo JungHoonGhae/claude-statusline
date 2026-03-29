@@ -1,6 +1,6 @@
 <div align="center">
   <h1>claude-statusline</h1>
-  <p>A rich statusline for Claude Code — pure bash, no plugins required.</p>
+  <p>A rich statusline for Claude Code — pure bash, no Node.js required.</p>
 </div>
 
 <p align="center">
@@ -68,7 +68,16 @@ This statusline fixes all of that.
 
 ## Installation
 
-### One-liner install (recommended)
+### Plugin install (recommended)
+
+```bash
+/plugin marketplace add JungHoonGhae/claude-statusline
+/plugin install claude-statusline@claude-statusline
+```
+
+Auto-setup on every session start — no manual config needed.
+
+### One-liner install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/JungHoonGhae/claude-statusline/main/install-remote.sh | bash
@@ -152,7 +161,7 @@ See [statusline.conf.example](./statusline.conf.example) for a fully commented t
 | | claude-statusline | [claude-hud](https://github.com/jarrodwatts/claude-hud) |
 |---|---|---|
 | **Type** | Pure bash scripts | Node.js/TypeScript plugin |
-| **Install** | One-liner `curl` or copy 2 files | Plugin marketplace |
+| **Install** | Plugin marketplace, one-liner `curl`, or copy 2 files | Plugin marketplace |
 | **Dependencies** | `jq` only | Node.js 18+ |
 | **Rate limits** | stdin + OAuth API (model-specific Opus/Sonnet) | stdin only |
 | **Token costs** | Daily/monthly via ccusage | — |
