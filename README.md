@@ -38,7 +38,7 @@ This statusline fixes all of that.
 ## What it shows
 
 ```
-  Opus 4.6 (1M context) │ ctx 44% │ oss-qraft (main) │ $50.07 · 2h 3m
+  Fable 5 ⚡fast high ✦ │ ctx 14% 143.5K/1M │ oss-qraft (main)* │ PR #42 ✓ │ $50.07 · 2h 3m +1036 -49
   Session ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 1h 27m
   Weekly  ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 3d 23h
   Sonnet  ● ● ● ● ● ● ● ● ● ●  100% left  Resets in 4d 15h
@@ -52,12 +52,22 @@ This statusline fixes all of that.
 
 | Section | Details |
 |---------|---------|
-| **Header** | Model, context % (color-coded), project, git branch, session cost & duration |
+| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking), context % with token count (143.5K/1M), project, git branch & dirty state, PR # + review state, session cost & duration, lines +/- |
 | **Compaction Warning** | Red warning when context exceeds critical threshold |
-| **Rate Limits** | Session (5h) / Weekly (7d) / Opus / Sonnet — gauge bar + % left + reset time |
+| **Rate Limits** | Session (5h) / Weekly (7d) / Opus / Sonnet / Extra usage — gauge bar + % left + reset time |
 | **Tool Activity** | Running tools, completed tool counts, active agents |
 | **Token Costs** | Today / Yesterday / Last 30 days — cost & token count |
 | **Budget Alert** | Red warning when daily spending exceeds configured limit |
+
+### Header badges
+
+| Badge | Meaning |
+|-------|---------|
+| `⚡fast` | Fast mode enabled |
+| `high` | Reasoning effort level (low/medium/high/max) |
+| `✦` | Extended thinking enabled |
+| `PR #42 ✓` | Open PR — ✓ approved · ● pending · ✗ changes requested · ◌ draft |
+| `+1036 -49` | Lines added/removed this session |
 
 ### Color coding
 
@@ -68,22 +78,25 @@ This statusline fixes all of that.
 
 ## Installation
 
-### Plugin install (recommended)
+### Plugin (recommended)
 
 ```bash
 /plugin marketplace add JungHoonGhae/claude-statusline
 /plugin install claude-statusline@claude-statusline
 ```
 
-Auto-setup on every session start — no manual config needed.
+Auto-setup on every session start — scripts stay up to date with the plugin.
 
-### One-liner install
+### Shell
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/JungHoonGhae/claude-statusline/main/install-remote.sh | bash
 ```
 
-### Clone & install
+<details>
+<summary><strong>Other methods</strong></summary>
+
+#### Clone & install
 
 ```bash
 git clone https://github.com/JungHoonGhae/claude-statusline.git
@@ -91,16 +104,12 @@ cd claude-statusline
 bash install.sh
 ```
 
-<details>
-<summary><strong>Manual install</strong></summary>
+#### Manual
 
 ```bash
-# 1. Copy scripts
 cp statusline.sh ~/.claude/statusline-command.sh
 cp ccusage-cache.sh ~/.claude/ccusage-cache.sh
 chmod +x ~/.claude/statusline-command.sh ~/.claude/ccusage-cache.sh
-
-# 2. Copy default config
 cp statusline.conf.example ~/.claude/statusline.conf
 ```
 
@@ -114,8 +123,6 @@ Add to `~/.claude/settings.json`:
   }
 }
 ```
-
-Restart Claude Code.
 
 </details>
 
@@ -163,7 +170,7 @@ See [statusline.conf.example](./statusline.conf.example) for a fully commented t
 | **Type** | Pure bash scripts | Node.js/TypeScript plugin |
 | **Install** | Plugin marketplace, one-liner `curl`, or copy 2 files | Plugin marketplace |
 | **Dependencies** | `jq` only | Node.js 18+ |
-| **Rate limits** | stdin + OAuth API (model-specific Opus/Sonnet) | stdin only |
+| **Rate limits** | stdin + OAuth API (model-specific + extra usage) | stdin only |
 | **Token costs** | Daily/monthly via ccusage | — |
 | **Budget alert** | Configurable daily limit | — |
 | **Compaction warning** | Context threshold alert | — |
@@ -174,12 +181,13 @@ See [statusline.conf.example](./statusline.conf.example) for a fully commented t
 
 ```
 Claude Code stdin (JSON)
-  ├── model, context, cost, git, transcript_path
+  ├── model, effort, thinking, fast_mode, context_window, cost, pr, transcript_path
   └── rate_limits (v2.1.6+)     ← Session/Weekly from stdin
           │
 statusline.sh
   ├── stdin rate_limits            Primary source
-  ├── OAuth API (cached 2m)        Fallback + model-specific limits (Opus/Sonnet)
+  ├── OAuth API (cached 2m)        Fallback + model-specific limits + extra usage
+  ├── git CLI                      Branch & dirty state (stdin no longer carries .git)
   ├── Transcript JSONL parsing     Tool & agent activity
   └── ccusage-cache.sh (bg, 10m)  Token cost aggregation
           │
@@ -188,9 +196,10 @@ stdout → Claude Code displays
 
 | Data | Source | Cache |
 |------|--------|-------|
-| Context / model / cost | stdin (native) | — |
+| Context / model / effort / PR / cost | stdin (native) | — |
 | Session & Weekly limits | stdin `rate_limits` | — |
-| Opus & Sonnet limits | OAuth API | 2 min |
+| Opus & Sonnet limits, extra usage | OAuth API | 2 min |
+| Git branch & dirty state | `git` CLI (stdin fallback) | — |
 | Tool & agent activity | Transcript JSONL | — |
 | Token costs | ccusage | 10 min (background) |
 
@@ -205,7 +214,7 @@ Works on **macOS**, **Linux**, and **Windows** (Git Bash / WSL).
 ## Credits
 
 Inspired by [jarrodwatts/claude-hud](https://github.com/jarrodwatts/claude-hud).
-Token cost tracking powered by [syakoo/ccusage](https://github.com/syakoo/ccusage).
+Token cost tracking powered by [ryoppippi/ccusage](https://github.com/ryoppippi/ccusage).
 
 ## Support
 

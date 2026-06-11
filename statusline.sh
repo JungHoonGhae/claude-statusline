@@ -84,12 +84,21 @@ input=$(cat)
 eval "$(jq -r '
   @sh "model=\(.model.display_name // "Unknown")",
   @sh "used=\(.context_window.used_percentage // 0 | floor)",
+  @sh "ctx_size=\(.context_window.context_window_size // 0)",
+  @sh "ctx_tokens=\(if .context_window.current_usage then ((.context_window.current_usage.input_tokens // 0) + (.context_window.current_usage.cache_creation_input_tokens // 0) + (.context_window.current_usage.cache_read_input_tokens // 0)) else "" end)",
   @sh "cwd=\(.workspace.current_dir // .cwd // "")",
   @sh "cost=\(.cost.total_cost_usd // 0)",
   @sh "duration_ms=\(.cost.total_duration_ms // 0)",
+  @sh "lines_added=\(.cost.total_lines_added // 0)",
+  @sh "lines_removed=\(.cost.total_lines_removed // 0)",
   @sh "git_branch=\(.git.branch // "")",
   @sh "git_dirty=\(.git.dirty // false)",
-  @sh "worktree=\(.worktree.name // "")",
+  @sh "worktree=\(.worktree.name // .workspace.git_worktree // "")",
+  @sh "fast_mode=\(.fast_mode // false)",
+  @sh "effort=\(.effort.level // "")",
+  @sh "thinking=\(.thinking.enabled // false)",
+  @sh "pr_number=\(.pr.number // "")",
+  @sh "pr_state=\(.pr.review_state // "")",
   @sh "transcript_path=\(.transcript_path // "")",
   @sh "stdin_5h_used=\(.rate_limits.five_hour.used_percentage // "")",
   @sh "stdin_5h_reset=\(.rate_limits.five_hour.resets_at // "")",
@@ -99,6 +108,15 @@ eval "$(jq -r '
 
 # ── Project & Branch ──────────────────────────────────────────────────────────
 project=$(basename "$cwd" 2>/dev/null)
+
+# Claude Code no longer sends .git in stdin (v2.1.x) — read from the repo directly
+if [ -z "$git_branch" ] && [ -n "$cwd" ] && [ -d "$cwd" ]; then
+  git_branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
+  [ -z "$git_branch" ] && git_branch=$(git -C "$cwd" rev-parse --short HEAD 2>/dev/null)
+  if [ -n "$git_branch" ] && [ "$git_dirty" != "true" ]; then
+    [ -n "$(git -C "$cwd" status --porcelain --untracked-files=no 2>/dev/null | head -1)" ] && git_dirty=true
+  fi
+fi
 
 dirty_mark=""
 if [ "$git_dirty" = "true" ]; then
@@ -230,15 +248,22 @@ print_limit_line() {
 }
 
 fmt_tokens() {
-  local t=$1
+  local t=$1 div unit
   if [ "$t" -ge 1000000000 ] 2>/dev/null; then
-    printf "%d.%dB" $((t / 1000000000)) $(( (t % 1000000000) / 100000000 ))
+    div=1000000000; unit=B
   elif [ "$t" -ge 1000000 ] 2>/dev/null; then
-    printf "%d.%dM" $((t / 1000000)) $(( (t % 1000000) / 100000 ))
+    div=1000000; unit=M
   elif [ "$t" -ge 1000 ] 2>/dev/null; then
-    printf "%d.%dK" $((t / 1000)) $(( (t % 1000) / 100 ))
+    div=1000; unit=K
   else
     printf "%d" "$t"
+    return
+  fi
+  local whole=$((t / div)) dec=$(( (t % div) * 10 / div ))
+  if [ "$dec" -eq 0 ]; then
+    printf "%d%s" "$whole" "$unit"
+  else
+    printf "%d.%d%s" "$whole" "$dec" "$unit"
   fi
 }
 
@@ -262,6 +287,7 @@ fi
 # API fallback: model-specific limits (Opus/Sonnet) + Session/Weekly if stdin missing
 opus_used=""; opus_reset=""
 sonnet_used=""; sonnet_reset=""
+extra_enabled=""; extra_used_pct=""
 
 if [ "$SHOW_RATE_LIMITS" = "true" ]; then
   CACHE_FILE="/tmp/.claude-usage-cache.json"
@@ -301,7 +327,9 @@ if [ "$SHOW_RATE_LIMITS" = "true" ]; then
       @sh "opus_used=\(if .seven_day_opus.utilization then (.seven_day_opus.utilization | floor | tostring) else "" end)",
       @sh "opus_reset=\(.seven_day_opus.resets_at // "")",
       @sh "sonnet_used=\(if .seven_day_sonnet.utilization then (.seven_day_sonnet.utilization | floor | tostring) else "" end)",
-      @sh "sonnet_reset=\(.seven_day_sonnet.resets_at // "")"
+      @sh "sonnet_reset=\(.seven_day_sonnet.resets_at // "")",
+      @sh "extra_enabled=\(.extra_usage.is_enabled // false)",
+      @sh "extra_used_pct=\(if .extra_usage.utilization then (.extra_usage.utilization | floor | tostring) else "" end)"
     ' "$CACHE_FILE")"
 
     [ -z "$five_hour_used" ] && five_hour_used="$api_5h_used" && five_hour_reset="$api_5h_reset"
@@ -353,9 +381,39 @@ fi
 # ══════════════════════════════════════════════════════════════════════════════
 echo ""
 
-# Line 1: Model | ctx % (colored) | project (branch*) | cost · duration
-printf "  \033[1;37m%s\033[0m \033[2m│\033[0m %bctx %s%%\033[0m \033[2m│\033[0m \033[33m%s\033[0m%b \033[2m│\033[0m \033[2m%s · %s\033[0m\n" \
-  "$model" "$ctx_c" "$used" "$project" "$location_str" "$cost_str" "$duration_str"
+# Model badges: fast mode / effort level / extended thinking
+model_badges=""
+[ "$fast_mode" = "true" ] && model_badges="${model_badges} \033[36m⚡fast\033[0m"
+[ -n "$effort" ] && model_badges="${model_badges} \033[2m${effort}\033[0m"
+[ "$thinking" = "true" ] && model_badges="${model_badges} \033[2m✦\033[0m"
+
+# Context detail: used/total tokens (1M context shows as 1M)
+ctx_detail=""
+if [ -n "$ctx_tokens" ] && [ "$ctx_size" -gt 0 ] 2>/dev/null; then
+  ctx_detail=" \033[2m$(fmt_tokens "$ctx_tokens")/$(fmt_tokens "$ctx_size")\033[0m"
+fi
+
+# PR badge with review state
+pr_str=""
+if [ -n "$pr_number" ]; then
+  case "$pr_state" in
+    approved)          pr_mark=" \033[32m✓\033[0m" ;;
+    changes_requested) pr_mark=" \033[31m✗\033[0m" ;;
+    draft)             pr_mark=" \033[2m◌\033[0m" ;;
+    *)                 pr_mark=" \033[33m●\033[0m" ;;
+  esac
+  pr_str=" \033[2m│\033[0m \033[36mPR #${pr_number}\033[0m${pr_mark}"
+fi
+
+# Lines added/removed this session
+lines_str=""
+if [ "$lines_added" -gt 0 ] 2>/dev/null || [ "$lines_removed" -gt 0 ] 2>/dev/null; then
+  lines_str=" \033[32m+${lines_added}\033[0m \033[31m-${lines_removed}\033[0m"
+fi
+
+# Line 1: Model badges | ctx % tokens | project (branch*) | PR | cost · duration +/-
+printf "  \033[1;37m%s\033[0m%b \033[2m│\033[0m %bctx %s%%\033[0m%b \033[2m│\033[0m \033[33m%s\033[0m%b%b \033[2m│\033[0m \033[2m%s · %s\033[0m%b\n" \
+  "$model" "$model_badges" "$ctx_c" "$used" "$ctx_detail" "$project" "$location_str" "$pr_str" "$cost_str" "$duration_str" "$lines_str"
 
 # Compaction warning
 if [ "$used" -ge "$CONTEXT_CRIT_PCT" ]; then
@@ -368,6 +426,9 @@ if [ "$SHOW_RATE_LIMITS" = "true" ]; then
   print_limit_line "Weekly"  "$seven_day_used" "$seven_day_reset"
   print_limit_line "Opus"    "$opus_used"      "$opus_reset"
   print_limit_line "Sonnet"  "$sonnet_used"    "$sonnet_reset"
+  if [ "$extra_enabled" = "true" ] && [ -n "$extra_used_pct" ]; then
+    print_limit_line "Extra" "$extra_used_pct" ""
+  fi
 fi
 
 # Tool / Agent Activity (from transcript)
