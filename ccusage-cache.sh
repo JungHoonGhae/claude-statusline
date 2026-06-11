@@ -10,6 +10,13 @@ get_mtime() {
   esac
 }
 
+days_ago() {
+  case "$OS_TYPE" in
+    Darwin) date -v-"$1"d +%Y-%m-%d ;;
+    *) date -d "$1 days ago" +%Y-%m-%d ;;
+  esac
+}
+
 CACHE_FILE="/tmp/.claude-ccusage-cache.json"
 CACHE_TTL=600  # 10 minutes
 
@@ -22,12 +29,21 @@ if [ -f "$CACHE_FILE" ]; then
 fi
 
 # Fetch and aggregate: today, yesterday, last 30 days
-data=$(npx ccusage@latest daily --days 30 --json 2>/dev/null)
+# ccusage >= 18 renamed --days to --since and .daily[].date to .period,
+# and may emit one row per agent — keep both schemas working
+data=$(npx ccusage@latest daily --since "$(days_ago 30)" --json 2>/dev/null)
 
 if [ -n "$data" ]; then
-  echo "$data" | jq '{
-    today: (.daily | map(select(.date == (now | strftime("%Y-%m-%d")))) | .[0] // {totalTokens: 0, totalCost: 0}),
-    yesterday: (.daily | map(select(.date == ((now - 86400) | strftime("%Y-%m-%d")))) | .[0] // {totalTokens: 0, totalCost: 0}),
-    last30: {totalTokens: ([.daily[].totalTokens] | add // 0), totalCost: ([.daily[].totalCost] | add // 0)}
-  }' > "$CACHE_FILE" 2>/dev/null
+  echo "$data" | jq --arg today "$(date +%Y-%m-%d)" --arg yest "$(days_ago 1)" '
+    def day($rows; $d):
+      [$rows[] | select((.period // .date) == $d)]
+      | {totalTokens: ([.[].totalTokens] | add // 0), totalCost: ([.[].totalCost] | add // 0)};
+    (.daily // []) as $all
+    | ([$all[] | select((.agent // "all") == "all")] | if length > 0 then . else $all end) as $rows
+    | {
+        today: day($rows; $today),
+        yesterday: day($rows; $yest),
+        last30: {totalTokens: ([$rows[].totalTokens] | add // 0), totalCost: ([$rows[].totalCost] | add // 0)}
+      }
+  ' > "$CACHE_FILE" 2>/dev/null
 fi
