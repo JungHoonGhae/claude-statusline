@@ -57,6 +57,15 @@ get_oauth_token() {
   fi
 }
 
+# ── Dependency Check ──────────────────────────────────────────────────────────
+# Without this, a missing jq makes the statusline silently blank (common in
+# Docker containers after restart — only the mounted ~/.claude survives)
+if ! command -v jq >/dev/null 2>&1; then
+  cat > /dev/null
+  printf '\n  \033[1;31mclaude-statusline: jq not found\033[0m \033[2m— install it: apt-get install -y jq / apk add jq / brew install jq\033[0m\n\n'
+  exit 0
+fi
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 SHOW_RATE_LIMITS=true
 SHOW_TOOLS=true

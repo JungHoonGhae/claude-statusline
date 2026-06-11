@@ -12,9 +12,6 @@ CONF_FILE="$CLAUDE_DIR/statusline.conf"
 TARGET_CMD="$CLAUDE_DIR/statusline-command.sh"
 TARGET_CACHE="$CLAUDE_DIR/ccusage-cache.sh"
 
-# Check jq
-command -v jq >/dev/null 2>&1 || exit 0
-
 # Ensure ~/.claude/ exists
 mkdir -p "$CLAUDE_DIR"
 
@@ -28,9 +25,9 @@ if [ ! -f "$CONF_FILE" ]; then
   cp "$PLUGIN_ROOT/statusline.conf.example" "$CONF_FILE"
 fi
 
-# Configure settings.json if statusLine is not set
+# Configure settings.json if statusLine is not set (editing existing JSON needs jq)
 if [ -f "$SETTINGS_FILE" ]; then
-  if ! jq -e '.statusLine' "$SETTINGS_FILE" >/dev/null 2>&1; then
+  if command -v jq >/dev/null 2>&1 && ! jq -e '.statusLine' "$SETTINGS_FILE" >/dev/null 2>&1; then
     jq '.statusLine = {"type": "command", "command": "bash ~/.claude/statusline-command.sh"}' \
       "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
   fi

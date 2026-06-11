@@ -209,6 +209,27 @@ stdout → Claude Code displays
 | Tool & agent activity | Transcript JSONL | — |
 | Token costs | ccusage | 10 min (background) |
 
+## Troubleshooting
+
+### Statusline goes blank after a Docker/devcontainer restart
+
+A container restart resets the container filesystem to the image — only mounted volumes (e.g. `~/.claude`) survive. If `jq` was installed inside the running container, it disappears and the statusline stops rendering. Bake the dependencies into your image:
+
+```dockerfile
+# Debian/Ubuntu
+RUN apt-get update && apt-get install -y jq curl git
+# Alpine
+RUN apk add --no-cache jq curl git bash
+```
+
+Node.js is also needed in the image if you use the ccusage token cost section.
+
+Since v1.2.2 the statusline shows `claude-statusline: jq not found` instead of silently going blank.
+
+### ccusage section missing
+
+The Today/Yesterday/Last 30 Days section needs `npx` (Node.js) available. The cache refreshes in the background, so the section can take one ~10s refresh cycle to appear after install.
+
 ## Platform support
 
 Works on **macOS**, **Linux**, and **Windows** (Git Bash / WSL).
