@@ -31,6 +31,20 @@ Always run a syntax check before committing:
 bash -n statusline.sh && bash -n ccusage-cache.sh && bash -n install.sh && bash -n install-remote.sh
 ```
 
+## Refreshing the README screenshot
+
+When you add a section or badge, regenerate the README image so it stays current:
+
+```bash
+brew install charmbracelet/tap/freeze   # one-time
+scripts/screenshot.sh                    # writes ./screenshot.png
+```
+
+The script renders `statusline.sh` against a sample payload wrapped in a mock
+Claude Code UI (banner, input box, permission line). To showcase a new field,
+edit the `SAMPLE` payload and fake-cache heredocs inside `scripts/screenshot.sh`.
+It backs up and restores your real `~/.claude` caches automatically.
+
 ## Guidelines
 
 - **Keep it pure bash.** The whole point of this project is zero runtime beyond

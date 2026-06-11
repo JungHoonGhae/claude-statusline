@@ -350,12 +350,17 @@ if [ "$SHOW_RATE_LIMITS" = "true" ]; then
       @sh "extra_used_pct=\(if .extra_usage.utilization then (.extra_usage.utilization | floor | tostring) else "" end)"
     ' "$CACHE_FILE")"
 
-    # Any seven_day_<bucket> with data (Opus/Sonnet/Fable/... — keys change over time)
+    # Any seven_day_<bucket> with data (Opus/Sonnet/Fable/... — keys change over time).
+    # Order by model capability (best first); unknown buckets keep API order after.
     api_buckets=$(jq -r '
-      to_entries[]
-      | select(.key | startswith("seven_day_"))
-      | select((.value | type) == "object" and .value.utilization != null)
-      | "\(.key | sub("^seven_day_"; ""))\t\(.value.utilization | floor)\t\(.value.resets_at // "")"
+      ["fable","opus","sonnet","haiku"] as $rank
+      | [ to_entries[]
+          | select(.key | startswith("seven_day_"))
+          | select((.value | type) == "object" and .value.utilization != null)
+          | (.key | sub("^seven_day_"; "")) as $n
+          | {name: $n, used: (.value.utilization | floor), reset: (.value.resets_at // ""), rank: (($rank | index($n)) // 99)} ]
+      | sort_by(.rank, .name)
+      | .[] | "\(.name)\t\(.used)\t\(.reset)"
     ' "$CACHE_FILE" 2>/dev/null)
 
     [ -z "$five_hour_used" ] && five_hour_used="$api_5h_used" && five_hour_reset="$api_5h_reset"

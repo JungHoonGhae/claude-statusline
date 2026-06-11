@@ -41,6 +41,8 @@ This statusline fixes all of that.
   Fable 5 ⚡fast high ✦ │ ctx 14% 143.5K/1M │ oss-qraft (main)* │ PR #42 ✓ │ $50.07 · 2h 3m +1036 -49
   Session ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 1h 27m
   Weekly  ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 3d 23h
+  Fable   ● ● ● ● ● ● ● ○ ○ ○  63% left  Resets in 4d 15h
+  Opus    ● ● ● ● ● ● ● ● ● ○  88% left  Resets in 4d 15h
   Sonnet  ● ● ● ● ● ● ● ● ● ●  100% left  Resets in 4d 15h
   ✓ Bash×40  ✓ Edit×19  ✓ Read×12  ✓ Write×11  ✓ Grep×2
   ◐ Explore Explore current Qraft codebase
@@ -73,7 +75,9 @@ Badges only appear when the data exists — e.g. `⚡fast` shows only with fast 
 
 ### Per-model rate limit buckets
 
-Model-specific weekly buckets (`Opus`, `Sonnet`, `Fable`, …) are **auto-detected** from the OAuth usage API — whatever buckets Anthropic reports for your plan show up automatically, so new models appear without a script update. Buckets the API reports as `null` (inactive for your plan) are hidden. An `Extra` gauge appears when extra usage credits are enabled on your account.
+Model-specific weekly buckets (`Fable`, `Opus`, `Sonnet`, `Haiku`, …) are **auto-detected** from the OAuth usage API — whatever buckets Anthropic reports for your plan show up automatically, so new models appear without a script update. They are ordered by model capability (most capable first), and buckets the API reports as `null` (inactive for your plan) are hidden. An `Extra` gauge appears when extra usage credits are enabled on your account.
+
+> Note: which model buckets exist depends on your plan and usage — most accounts only see a subset (e.g. just `Sonnet`). The screenshot above shows the full layout for illustration.
 
 ### Color coding
 
