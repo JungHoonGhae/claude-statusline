@@ -83,14 +83,14 @@ restore() {
 }
 trap restore EXIT
 
-# Only buckets the real OAuth API actually returns (seven_day_opus / _sonnet).
-# There is no seven_day_fable key yet, so don't fake one — it would never render.
+# Mirror what the real OAuth API returns for a typical account: Session, Weekly,
+# and one active per-model bucket (Sonnet). Opus/Fable buckets are null unless you
+# actually use those models, so faking them would show lines that never appear.
 cat > "$CACHE_DIR/usage.json" <<EOF
 {
   "five_hour":  {"utilization": 17, "resets_at": "$(iso 5220)"},
   "seven_day":  {"utilization": 17, "resets_at": "$(iso 345600)"},
-  "seven_day_opus":   {"utilization": 12, "resets_at": "$(iso 399600)"},
-  "seven_day_sonnet": {"utilization": 5,  "resets_at": "$(iso 399600)"},
+  "seven_day_sonnet": {"utilization": 5, "resets_at": "$(iso 399600)"},
   "extra_usage": {"is_enabled": false}
 }
 EOF

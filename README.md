@@ -41,7 +41,6 @@ This statusline fixes all of that.
   Fable 5 high ✦ │ ctx 14% ● ○ ○ ○ ○ 143.5K/1M │ oss-qraft (main) │ PR #42 ✓ │ $50.07 · 2h 3m · ~$24/hr +1036 -49
   Session ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 1h 27m
   Weekly  ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 3d 23h
-  Opus    ● ● ● ● ● ● ● ● ● ○  88% left  Resets in 4d 15h
   Sonnet  ● ● ● ● ● ● ● ● ● ○  95% left  Resets in 4d 15h
   ✓ Bash×40  ✓ Edit×19  ✓ Read×12  ✓ Write×11  ✓ Grep×2
   ◐ Explore Explore current Qraft codebase
@@ -76,7 +75,7 @@ Badges only appear when the data exists — e.g. `⚡fast` shows only with fast 
 
 Model-specific weekly buckets are **auto-detected** from the OAuth usage API — whatever buckets Anthropic reports for your plan show up automatically, so new models appear without a script update. They are ordered by model capability (most capable first, `Fable` > `Opus` > `Sonnet` > `Haiku`), and buckets the API reports as `null` (inactive for your plan) are hidden. An `Extra` gauge appears when extra usage credits are enabled on your account.
 
-> Note: which buckets exist depends on your plan and usage. Today the API exposes `Opus` and `Sonnet` sub-limits (shown above); many accounts only see one. If Anthropic adds a dedicated bucket for a newer model, it appears automatically at the top — no update needed.
+> Note: which buckets exist depends on your plan and usage. A bucket only appears once that model has tracked usage — most accounts see just one (e.g. `Sonnet`, as above); `Opus` shows once you've used Opus. When more than one is active they sort by capability, and any new model Anthropic adds appears automatically — no update needed.
 
 ### Color coding
 
