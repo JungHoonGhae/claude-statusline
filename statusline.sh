@@ -314,8 +314,9 @@ status_dot() {
 
 format_remaining_epoch() {
   local reset_epoch=$1
-  if [ -z "$reset_epoch" ] || [ "$reset_epoch" = "" ]; then
-    echo ""
+  # null/empty reset = bucket idle (0% used) — the window hasn't started yet
+  if [ -z "$reset_epoch" ] || [ "$reset_epoch" = "" ] || [ "$reset_epoch" = "null" ]; then
+    echo "idle"
     return
   fi
   if echo "$reset_epoch" | grep -qE '^[0-9]+\.?[0-9]*$'; then
