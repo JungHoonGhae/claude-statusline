@@ -99,10 +99,20 @@ if [ -f "$STATUSLINE_CONF" ]; then
   done < <(grep -v '^\s*#' "$STATUSLINE_CONF" | grep -v '^\s*$')
 fi
 
-# Terminal width — Claude Code exports $COLUMNS; compact the layout when narrow
+# Terminal width — Claude Code exports $COLUMNS. Three tiers:
+#   WIDE    (>= WIDE_COLS):  full header incl. ctx bar, token detail, burn rate
+#   medium:                  standard header, no extras
+#   COMPACT (<  COMPACT_COLS): minimal header + compacted rate-limit lines
+# COLUMNS unset (0) → assume wide so piped/test use keeps the full layout.
 COLS=${COLUMNS:-0}
+COMPACT_COLS=100   # minimal header below this (standard header needs ~96 cols)
+WIDE_COLS=132      # ctx bar + tokens + burn rate above this (full header ~129 cols)
 COMPACT=0
-[ "$COLS" -gt 0 ] 2>/dev/null && [ "$COLS" -lt 80 ] && COMPACT=1
+WIDE=1
+if [ "$COLS" -gt 0 ] 2>/dev/null; then
+  [ "$COLS" -lt "$COMPACT_COLS" ] && COMPACT=1
+  [ "$COLS" -lt "$WIDE_COLS" ] && WIDE=0
+fi
 # Links can leak escape codes through tmux without passthrough — disable there
 [ -n "$TMUX" ] && SHOW_LINKS=false
 
@@ -510,13 +520,13 @@ model_badges=""
 [ -n "$effort" ] && model_badges="${model_badges} \033[2m${effort}\033[0m"
 [ "$thinking" = "true" ] && model_badges="${model_badges} \033[2m✦\033[0m"
 
-# Context mini-bar (low usage = good = green) + used/total tokens
+# Context mini-bar (low usage = good = green) + used/total tokens — wide only
 ctx_bar_str=""
-if [ "$SHOW_CONTEXT_BAR" = "true" ] && [ "$COMPACT" -ne 1 ]; then
+if [ "$SHOW_CONTEXT_BAR" = "true" ] && [ "$WIDE" -eq 1 ]; then
   ctx_bar_str=" $(ctx_bar "$used")"
 fi
 ctx_detail=""
-if [ -n "$ctx_tokens" ] && [ "$ctx_size" -gt 0 ] 2>/dev/null && [ "$COMPACT" -ne 1 ]; then
+if [ -n "$ctx_tokens" ] && [ "$ctx_size" -gt 0 ] 2>/dev/null && [ "$WIDE" -eq 1 ]; then
   ctx_detail=" \033[2m$(fmt_tokens "$ctx_tokens")/$(fmt_tokens "$ctx_size")\033[0m"
 fi
 
@@ -539,12 +549,19 @@ if [ "$lines_added" -gt 0 ] 2>/dev/null || [ "$lines_removed" -gt 0 ] 2>/dev/nul
   lines_str=" \033[32m+${lines_added}\033[0m \033[31m-${lines_removed}\033[0m"
 fi
 
-# Drop the lower-priority extras when the terminal is narrow
-[ "$COMPACT" -eq 1 ] && { burn_str=""; session_str=""; }
+# Burn rate is a wide-only extra; session name drops on the narrowest tier
+[ "$WIDE" -ne 1 ] && burn_str=""
+[ "$COMPACT" -eq 1 ] && session_str=""
 
-# Line 1: Model badges | ctx % bar tokens | project (branch* ↑↓) | PR | cost · dur · burn +/- · name
-printf "  \033[1;37m%s\033[0m%b \033[2m│\033[0m %bctx %s%%\033[0m%b%b \033[2m│\033[0m \033[33m%s\033[0m%b%b \033[2m│\033[0m \033[2m%s · %s\033[0m%b%b%b\n" \
-  "$model" "$model_badges" "$ctx_c" "$used" "$ctx_bar_str" "$ctx_detail" "$project" "$location_str" "$pr_str" "$cost_str" "$duration_str" "$burn_str" "$lines_str" "$session_str"
+if [ "$COMPACT" -eq 1 ]; then
+  # Minimal header for narrow terminals: model | ctx% | project (branch) | cost
+  printf "  \033[1;37m%s\033[0m \033[2m│\033[0m %bctx %s%%\033[0m \033[2m│\033[0m \033[33m%s\033[0m%b \033[2m│\033[0m \033[2m%s\033[0m\n" \
+    "$model" "$ctx_c" "$used" "$project" "$location_str" "$cost_str"
+else
+  # Full / medium: extras (bar, tokens, burn) are pre-blanked unless WIDE
+  printf "  \033[1;37m%s\033[0m%b \033[2m│\033[0m %bctx %s%%\033[0m%b%b \033[2m│\033[0m \033[33m%s\033[0m%b%b \033[2m│\033[0m \033[2m%s · %s\033[0m%b%b%b\n" \
+    "$model" "$model_badges" "$ctx_c" "$used" "$ctx_bar_str" "$ctx_detail" "$project" "$location_str" "$pr_str" "$cost_str" "$duration_str" "$burn_str" "$lines_str" "$session_str"
+fi
 
 # Compaction warning
 if [ "$used" -ge "$CONTEXT_CRIT_PCT" ]; then
