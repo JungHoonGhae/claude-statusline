@@ -38,7 +38,7 @@ This statusline fixes all of that.
 ## What it shows
 
 ```
-  Fable 5 ⚡fast high ✦ │ ctx 14% 143.5K/1M │ oss-qraft (main)* │ PR #42 ✓ │ $50.07 · 2h 3m +1036 -49
+  Fable 5 ⚡fast high ✦ │ ctx 14% ●○○○○○○○○○ 143.5K/1M │ oss-qraft (main)* ↑2 │ PR #42 ✓ │ $50.07 · 2h 3m · ~$24/hr +1036 -49 · refactor-pipeline
   Session ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 1h 27m
   Weekly  ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 3d 23h
   Fable   ● ● ● ● ● ● ● ○ ○ ○  63% left  Resets in 4d 15h
@@ -54,7 +54,7 @@ This statusline fixes all of that.
 
 | Section | Details |
 |---------|---------|
-| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking), context % with token count (143.5K/1M), project, git branch & dirty state, PR # + review state, session cost & duration, lines +/- |
+| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking), context % with mini-bar and token count (143.5K/1M), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, session name |
 | **Compaction Warning** | Red warning when context exceeds critical threshold |
 | **Rate Limits** | Session (5h) / Weekly (7d) / per-model buckets (Opus, Sonnet, Fable, … auto-detected) / Extra usage — gauge bar + % left + reset time |
 | **Tool Activity** | Running tools, completed tool counts, active agents |
@@ -154,6 +154,12 @@ SHOW_TOOLS=true
 SHOW_AGENTS=true
 SHOW_CCUSAGE=true
 
+# Header extras
+SHOW_CONTEXT_BAR=true
+SHOW_BURN_RATE=true
+SHOW_GIT_AHEAD=true
+SHOW_LINKS=true
+
 # Context thresholds
 CONTEXT_WARN_PCT=30       # Yellow warning
 CONTEXT_CRIT_PCT=70       # Red + compaction warning
@@ -164,13 +170,21 @@ DAILY_BUDGET=0
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `SHOW_RATE_LIMITS` | `true` | Show session/weekly/per-model rate limit bars |
-| `SHOW_TOOLS` | `true` | Show tool activity from transcript |
-| `SHOW_AGENTS` | `true` | Show agent activity from transcript |
-| `SHOW_CCUSAGE` | `true` | Show daily/monthly token cost stats |
+| `SHOW_RATE_LIMITS` | `true` | Session/weekly/per-model rate limit bars |
+| `SHOW_TOOLS` | `true` | Tool activity from transcript |
+| `SHOW_AGENTS` | `true` | Agent activity from transcript |
+| `SHOW_CCUSAGE` | `true` | Daily/monthly token cost stats |
+| `SHOW_CONTEXT_BAR` | `true` | Mini gauge next to ctx % |
+| `SHOW_BURN_RATE` | `true` | ~$/hr spend rate in the header |
+| `SHOW_GIT_AHEAD` | `true` | ↑ahead ↓behind vs upstream |
+| `SHOW_LINKS` | `true` | Clickable PR link (OSC 8; auto-off in tmux) |
 | `CONTEXT_WARN_PCT` | `30` | Context % threshold for yellow |
 | `CONTEXT_CRIT_PCT` | `70` | Context % threshold for red + compaction warning |
 | `DAILY_BUDGET` | `0` | Daily budget alert in USD (0 = disabled) |
+
+Every option can be set in the conf file **or** as an environment variable (the conf
+file takes precedence). The statusline also auto-compacts its layout on narrow
+terminals using `$COLUMNS`.
 
 See [statusline.conf.example](./statusline.conf.example) for a fully commented template.
 

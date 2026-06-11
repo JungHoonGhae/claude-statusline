@@ -72,13 +72,18 @@ CACHE_DIR="${TMPDIR:-/tmp}/claude-statusline-$(id -u)"
 mkdir -p "$CACHE_DIR" 2>/dev/null
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-SHOW_RATE_LIMITS=true
-SHOW_TOOLS=true
-SHOW_AGENTS=true
-SHOW_CCUSAGE=true
-CONTEXT_WARN_PCT=30
-CONTEXT_CRIT_PCT=70
-DAILY_BUDGET=0
+# Defaults; overridable by environment, then by the conf file (conf wins).
+SHOW_RATE_LIMITS=${SHOW_RATE_LIMITS:-true}
+SHOW_TOOLS=${SHOW_TOOLS:-true}
+SHOW_AGENTS=${SHOW_AGENTS:-true}
+SHOW_CCUSAGE=${SHOW_CCUSAGE:-true}
+SHOW_CONTEXT_BAR=${SHOW_CONTEXT_BAR:-true}
+SHOW_BURN_RATE=${SHOW_BURN_RATE:-true}
+SHOW_GIT_AHEAD=${SHOW_GIT_AHEAD:-true}
+SHOW_LINKS=${SHOW_LINKS:-true}
+CONTEXT_WARN_PCT=${CONTEXT_WARN_PCT:-30}
+CONTEXT_CRIT_PCT=${CONTEXT_CRIT_PCT:-70}
+DAILY_BUDGET=${DAILY_BUDGET:-0}
 
 STATUSLINE_CONF="${STATUSLINE_CONF:-$HOME/.claude/statusline.conf}"
 if [ -f "$STATUSLINE_CONF" ]; then
@@ -87,10 +92,18 @@ if [ -f "$STATUSLINE_CONF" ]; then
     val=$(echo "$val" | tr -d '[:space:]')
     case "$key" in
       SHOW_RATE_LIMITS|SHOW_TOOLS|SHOW_AGENTS|SHOW_CCUSAGE) eval "$key=$val" ;;
+      SHOW_CONTEXT_BAR|SHOW_BURN_RATE|SHOW_GIT_AHEAD|SHOW_LINKS) eval "$key=$val" ;;
       CONTEXT_WARN_PCT|CONTEXT_CRIT_PCT|DAILY_BUDGET) eval "$key=$val" ;;
     esac
   done < <(grep -v '^\s*#' "$STATUSLINE_CONF" | grep -v '^\s*$')
 fi
+
+# Terminal width — Claude Code exports $COLUMNS; compact the layout when narrow
+COLS=${COLUMNS:-0}
+COMPACT=0
+[ "$COLS" -gt 0 ] 2>/dev/null && [ "$COLS" -lt 80 ] && COMPACT=1
+# Links can leak escape codes through tmux without passthrough — disable there
+[ -n "$TMUX" ] && SHOW_LINKS=false
 
 # ── Parse stdin from Claude Code ──────────────────────────────────────────────
 input=$(cat)
@@ -113,6 +126,8 @@ eval "$(jq -r '
   @sh "thinking=\(.thinking.enabled // false)",
   @sh "pr_number=\(.pr.number // "")",
   @sh "pr_state=\(.pr.review_state // "")",
+  @sh "pr_url=\(.pr.url // "")",
+  @sh "session_name=\(.session_name // "")",
   @sh "transcript_path=\(.transcript_path // "")",
   @sh "stdin_5h_used=\(.rate_limits.five_hour.used_percentage // "")",
   @sh "stdin_5h_reset=\(.rate_limits.five_hour.resets_at // "")",
@@ -132,6 +147,18 @@ if [ -z "$git_branch" ] && [ -n "$cwd" ] && [ -d "$cwd" ]; then
   fi
 fi
 
+# Ahead/behind vs upstream (one cheap git call; skipped if no upstream)
+ahead_behind=""
+if [ "$SHOW_GIT_AHEAD" = "true" ] && [ -n "$git_branch" ] && [ -n "$cwd" ] && [ -d "$cwd" ]; then
+  ab=$(git -C "$cwd" rev-list --left-right --count '@{upstream}...HEAD' 2>/dev/null)
+  if [ -n "$ab" ]; then
+    behind=${ab%%[	 ]*}
+    ahead=${ab##*[	 ]}
+    [ "$ahead" -gt 0 ] 2>/dev/null && ahead_behind="${ahead_behind} \033[32m↑${ahead}\033[0m"
+    [ "$behind" -gt 0 ] 2>/dev/null && ahead_behind="${ahead_behind} \033[31m↓${behind}\033[0m"
+  fi
+fi
+
 dirty_mark=""
 if [ "$git_dirty" = "true" ]; then
   dirty_mark="\033[31m*\033[0m"
@@ -139,9 +166,9 @@ fi
 
 location_str=""
 if [ -n "$worktree" ]; then
-  location_str=" \033[35m⎇ ${worktree}\033[0m${dirty_mark}"
+  location_str=" \033[35m⎇ ${worktree}\033[0m${dirty_mark}${ahead_behind}"
 elif [ -n "$git_branch" ]; then
-  location_str=" \033[35m(${git_branch})\033[0m${dirty_mark}"
+  location_str=" \033[35m(${git_branch})\033[0m${dirty_mark}${ahead_behind}"
 fi
 
 # ── Format Duration ───────────────────────────────────────────────────────────
@@ -165,6 +192,39 @@ if [ "$cost" != "0" ] && [ -n "$cost" ]; then
   cost_str=$(printf '$%.2f' "$cost")
 else
   cost_str='$0.00'
+fi
+
+# ── Burn Rate ($/hr) ──────────────────────────────────────────────────────────
+# Only meaningful past the first minute; integer-cents math, no bc/awk
+burn_str=""
+if [ "$SHOW_BURN_RATE" = "true" ] && [ "$duration_ms" -ge 60000 ] 2>/dev/null; then
+  cstr=${cost_str#\$}                      # "24.32"
+  cfrac=${cstr#*.}00                        # decimals, padded
+  cents=$(( ${cstr%%.*} * 100 + 10#${cfrac:0:2} ))
+  if [ "$cents" -gt 0 ] 2>/dev/null; then
+    rate_cents=$(( cents * 3600000 / duration_ms ))
+    burn_str=$(printf ' \033[2m· ~$%d.%02d/hr\033[0m' $((rate_cents / 100)) $((rate_cents % 100)))
+  fi
+fi
+
+# ── OSC 8 Hyperlink ───────────────────────────────────────────────────────────
+# Wraps text in a clickable link; unsupported terminals just show the text.
+# Returns *literal* escape sequences so it survives the header's printf '%b'.
+osc_link() {
+  local url=$1 text=$2
+  if [ "$SHOW_LINKS" = "true" ] && [ -n "$url" ]; then
+    printf '%s' '\033]8;;'"$url"'\033\\'"$text"'\033]8;;\033\\'
+  else
+    printf '%s' "$text"
+  fi
+}
+
+# Session name (truncated; long /rename labels would blow up line 1)
+session_str=""
+if [ -n "$session_name" ]; then
+  sn=$session_name
+  [ "${#sn}" -gt 24 ] && sn="${sn:0:23}…"
+  session_str=" \033[2m· ${sn}\033[0m"
 fi
 
 # ── Color Helpers ─────────────────────────────────────────────────────────────
@@ -194,11 +254,31 @@ make_bar() {
     color="\033[31m"
   fi
 
-  local bar="" i=0
+  local bar="" i=0 sep=" "
+  [ "$COMPACT" -eq 1 ] && sep=""
   while [ "$i" -lt 10 ]; do
-    [ "$i" -gt 0 ] && bar="${bar} "
+    [ "$i" -gt 0 ] && bar="${bar}${sep}"
     if [ "$i" -lt "$filled" ]; then
       bar="${bar}${color}●\033[0m"
+    else
+      bar="${bar}\033[2m○\033[0m"
+    fi
+    i=$((i + 1))
+  done
+  printf '%b' "$bar"
+}
+
+# Compact context gauge for the header: filled = used%, colored low=good
+ctx_bar() {
+  local pct=$1 c
+  c=$(ctx_color "$pct")
+  local filled=$((pct / 10))
+  [ "$filled" -gt 10 ] && filled=10
+  [ "$filled" -lt 0 ] && filled=0
+  local bar="" i=0
+  while [ "$i" -lt 10 ]; do
+    if [ "$i" -lt "$filled" ]; then
+      bar="${bar}${c}●\033[0m"
     else
       bar="${bar}\033[2m○\033[0m"
     fi
@@ -254,8 +334,13 @@ format_remaining_epoch() {
 
 print_limit_line() {
   local label=$1 used_val=$2 reset_val=$3
-  if [ -n "$used_val" ]; then
-    local left=$((100 - used_val))
+  [ -n "$used_val" ] || return
+  local left=$((100 - used_val))
+  if [ "$COMPACT" -eq 1 ]; then
+    local rem; rem=$(format_remaining_epoch "$reset_val"); rem=${rem#Resets in }; rem=${rem// /}
+    printf "  \033[2m%-6.6s\033[0m%b \033[36m%s%%\033[0m \033[2m%s\033[0m\n" \
+      "$label" "$(make_bar "$left")" "$left" "$rem"
+  else
     printf "  \033[2m%-7.7s\033[0m %b %s  \033[36m%s%% left\033[0m  \033[2m%s\033[0m\n" \
       "$label" "$(status_dot "$left")" "$(make_bar "$left")" "$left" "$(format_remaining_epoch "$reset_val")"
   fi
@@ -423,13 +508,17 @@ model_badges=""
 [ -n "$effort" ] && model_badges="${model_badges} \033[2m${effort}\033[0m"
 [ "$thinking" = "true" ] && model_badges="${model_badges} \033[2m✦\033[0m"
 
-# Context detail: used/total tokens (1M context shows as 1M)
+# Context mini-bar (low usage = good = green) + used/total tokens
+ctx_bar_str=""
+if [ "$SHOW_CONTEXT_BAR" = "true" ] && [ "$COMPACT" -ne 1 ]; then
+  ctx_bar_str=" $(ctx_bar "$used")"
+fi
 ctx_detail=""
-if [ -n "$ctx_tokens" ] && [ "$ctx_size" -gt 0 ] 2>/dev/null; then
+if [ -n "$ctx_tokens" ] && [ "$ctx_size" -gt 0 ] 2>/dev/null && [ "$COMPACT" -ne 1 ]; then
   ctx_detail=" \033[2m$(fmt_tokens "$ctx_tokens")/$(fmt_tokens "$ctx_size")\033[0m"
 fi
 
-# PR badge with review state
+# PR badge with review state (clickable when a URL is present)
 pr_str=""
 if [ -n "$pr_number" ]; then
   case "$pr_state" in
@@ -438,7 +527,8 @@ if [ -n "$pr_number" ]; then
     draft)             pr_mark=" \033[2m◌\033[0m" ;;
     *)                 pr_mark=" \033[33m●\033[0m" ;;
   esac
-  pr_str=" \033[2m│\033[0m \033[36mPR #${pr_number}\033[0m${pr_mark}"
+  pr_label=$(osc_link "$pr_url" "PR #${pr_number}")
+  pr_str=" \033[2m│\033[0m \033[36m${pr_label}\033[0m${pr_mark}"
 fi
 
 # Lines added/removed this session
@@ -447,9 +537,12 @@ if [ "$lines_added" -gt 0 ] 2>/dev/null || [ "$lines_removed" -gt 0 ] 2>/dev/nul
   lines_str=" \033[32m+${lines_added}\033[0m \033[31m-${lines_removed}\033[0m"
 fi
 
-# Line 1: Model badges | ctx % tokens | project (branch*) | PR | cost · duration +/-
-printf "  \033[1;37m%s\033[0m%b \033[2m│\033[0m %bctx %s%%\033[0m%b \033[2m│\033[0m \033[33m%s\033[0m%b%b \033[2m│\033[0m \033[2m%s · %s\033[0m%b\n" \
-  "$model" "$model_badges" "$ctx_c" "$used" "$ctx_detail" "$project" "$location_str" "$pr_str" "$cost_str" "$duration_str" "$lines_str"
+# Drop the lower-priority extras when the terminal is narrow
+[ "$COMPACT" -eq 1 ] && { burn_str=""; session_str=""; }
+
+# Line 1: Model badges | ctx % bar tokens | project (branch* ↑↓) | PR | cost · dur · burn +/- · name
+printf "  \033[1;37m%s\033[0m%b \033[2m│\033[0m %bctx %s%%\033[0m%b%b \033[2m│\033[0m \033[33m%s\033[0m%b%b \033[2m│\033[0m \033[2m%s · %s\033[0m%b%b%b\n" \
+  "$model" "$model_badges" "$ctx_c" "$used" "$ctx_bar_str" "$ctx_detail" "$project" "$location_str" "$pr_str" "$cost_str" "$duration_str" "$burn_str" "$lines_str" "$session_str"
 
 # Compaction warning
 if [ "$used" -ge "$CONTEXT_CRIT_PCT" ]; then

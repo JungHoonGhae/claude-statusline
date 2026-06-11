@@ -49,6 +49,7 @@ cat > "$SAMPLE" <<EOF
   "model": {"id": "claude-fable-5[1m]", "display_name": "Fable 5"},
   "cwd": "/Users/junghoon/workspace/projects/oss-qraft",
   "workspace": {"current_dir": "/Users/junghoon/workspace/projects/oss-qraft"},
+  "session_name": "refactor-pipeline",
   "transcript_path": "$WORK/transcript.jsonl",
   "version": "2.1.170",
   "fast_mode": true,

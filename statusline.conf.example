@@ -1,13 +1,20 @@
 # Claude Statusline Configuration
 # Copy to ~/.claude/statusline.conf and uncomment to customize
 #
-# Or set STATUSLINE_CONF env var to use a different path
+# Or set STATUSLINE_CONF env var to use a different path.
+# Every option can also be set as an environment variable; the conf file wins.
 
 # ── Toggle Sections ───────────────────────────────────────────────────────────
-# SHOW_RATE_LIMITS=true     # Session/Weekly + per-model rate limit bars (Opus/Sonnet/Fable/...)
+# SHOW_RATE_LIMITS=true     # Session/Weekly + per-model rate limit bars (Fable/Opus/Sonnet/...)
 # SHOW_TOOLS=true           # Tool activity from transcript
 # SHOW_AGENTS=true          # Agent activity from transcript
-# SHOW_CCUSAGE=true         # Daily/monthly token cost stats (requires ccusage)
+# SHOW_CCUSAGE=true         # Daily/monthly token cost stats (requires Node.js/npx)
+
+# ── Header Extras ─────────────────────────────────────────────────────────────
+# SHOW_CONTEXT_BAR=true     # Mini gauge next to ctx % in the header
+# SHOW_BURN_RATE=true       # ~$/hr spend rate (cost ÷ session duration)
+# SHOW_GIT_AHEAD=true       # ↑ahead ↓behind vs upstream branch
+# SHOW_LINKS=true           # Clickable PR link (OSC 8; auto-off inside tmux)
 
 # ── Context Thresholds ────────────────────────────────────────────────────────
 # CONTEXT_WARN_PCT=30       # Yellow warning threshold (%)
