@@ -54,7 +54,7 @@ This statusline fixes all of that.
 |---------|---------|
 | **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking), context % with token count (143.5K/1M), project, git branch & dirty state, PR # + review state, session cost & duration, lines +/- |
 | **Compaction Warning** | Red warning when context exceeds critical threshold |
-| **Rate Limits** | Session (5h) / Weekly (7d) / Opus / Sonnet / Extra usage — gauge bar + % left + reset time |
+| **Rate Limits** | Session (5h) / Weekly (7d) / per-model buckets (Opus, Sonnet, Fable, … auto-detected) / Extra usage — gauge bar + % left + reset time |
 | **Tool Activity** | Running tools, completed tool counts, active agents |
 | **Token Costs** | Today / Yesterday / Last 30 days — cost & token count |
 | **Budget Alert** | Red warning when daily spending exceeds configured limit |
@@ -68,6 +68,12 @@ This statusline fixes all of that.
 | `✦` | Extended thinking enabled |
 | `PR #42 ✓` | Open PR — ✓ approved · ● pending · ✗ changes requested · ◌ draft |
 | `+1036 -49` | Lines added/removed this session |
+
+Badges only appear when the data exists — e.g. `⚡fast` shows only with fast mode on, `PR #42` only while a PR is open.
+
+### Per-model rate limit buckets
+
+Model-specific weekly buckets (`Opus`, `Sonnet`, `Fable`, …) are **auto-detected** from the OAuth usage API — whatever buckets Anthropic reports for your plan show up automatically, so new models appear without a script update. Buckets the API reports as `null` (inactive for your plan) are hidden. An `Extra` gauge appears when extra usage credits are enabled on your account.
 
 ### Color coding
 
@@ -153,7 +159,7 @@ DAILY_BUDGET=0
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `SHOW_RATE_LIMITS` | `true` | Show session/weekly/model rate limit bars |
+| `SHOW_RATE_LIMITS` | `true` | Show session/weekly/per-model rate limit bars |
 | `SHOW_TOOLS` | `true` | Show tool activity from transcript |
 | `SHOW_AGENTS` | `true` | Show agent activity from transcript |
 | `SHOW_CCUSAGE` | `true` | Show daily/monthly token cost stats |
@@ -186,7 +192,7 @@ Claude Code stdin (JSON)
           │
 statusline.sh
   ├── stdin rate_limits            Primary source
-  ├── OAuth API (cached 2m)        Fallback + model-specific limits + extra usage
+  ├── OAuth API (cached 2m)        Fallback + per-model buckets (auto-detected) + extra usage
   ├── git CLI                      Branch & dirty state (stdin no longer carries .git)
   ├── Transcript JSONL parsing     Tool & agent activity
   └── ccusage-cache.sh (bg, 10m)  Token cost aggregation
@@ -198,7 +204,7 @@ stdout → Claude Code displays
 |------|--------|-------|
 | Context / model / effort / PR / cost | stdin (native) | — |
 | Session & Weekly limits | stdin `rate_limits` | — |
-| Opus & Sonnet limits, extra usage | OAuth API | 2 min |
+| Per-model limits (Opus/Sonnet/Fable/…), extra usage | OAuth API | 2 min |
 | Git branch & dirty state | `git` CLI (stdin fallback) | — |
 | Tool & agent activity | Transcript JSONL | — |
 | Token costs | ccusage | 10 min (background) |

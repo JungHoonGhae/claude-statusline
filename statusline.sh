@@ -242,9 +242,17 @@ print_limit_line() {
   local label=$1 used_val=$2 reset_val=$3
   if [ -n "$used_val" ]; then
     local left=$((100 - used_val))
-    printf "  \033[2m%-7s\033[0m %b %s  \033[36m%s%% left\033[0m  \033[2m%s\033[0m\n" \
+    printf "  \033[2m%-7.7s\033[0m %b %s  \033[36m%s%% left\033[0m  \033[2m%s\033[0m\n" \
       "$label" "$(status_dot "$left")" "$(make_bar "$left")" "$left" "$(format_remaining_epoch "$reset_val")"
   fi
+}
+
+# Bucket key → display label (works on bash 3.2 — no ${var^})
+pretty_bucket() {
+  case "$1" in
+    oauth_apps) echo "Apps" ;;
+    *) echo "$1" | awk -F_ '{ print toupper(substr($1,1,1)) substr($1,2) }' ;;
+  esac
 }
 
 fmt_tokens() {
@@ -284,9 +292,8 @@ else
   seven_day_used=""
 fi
 
-# API fallback: model-specific limits (Opus/Sonnet) + Session/Weekly if stdin missing
-opus_used=""; opus_reset=""
-sonnet_used=""; sonnet_reset=""
+# API fallback: model-specific buckets (auto-detected) + Session/Weekly if stdin missing
+api_buckets=""
 extra_enabled=""; extra_used_pct=""
 
 if [ "$SHOW_RATE_LIMITS" = "true" ]; then
@@ -324,13 +331,17 @@ if [ "$SHOW_RATE_LIMITS" = "true" ]; then
       @sh "api_5h_reset=\(.five_hour.resets_at // "")",
       @sh "api_7d_used=\(.seven_day.utilization // "" | if . != "" then (. | floor | tostring) else "" end)",
       @sh "api_7d_reset=\(.seven_day.resets_at // "")",
-      @sh "opus_used=\(if .seven_day_opus.utilization then (.seven_day_opus.utilization | floor | tostring) else "" end)",
-      @sh "opus_reset=\(.seven_day_opus.resets_at // "")",
-      @sh "sonnet_used=\(if .seven_day_sonnet.utilization then (.seven_day_sonnet.utilization | floor | tostring) else "" end)",
-      @sh "sonnet_reset=\(.seven_day_sonnet.resets_at // "")",
       @sh "extra_enabled=\(.extra_usage.is_enabled // false)",
       @sh "extra_used_pct=\(if .extra_usage.utilization then (.extra_usage.utilization | floor | tostring) else "" end)"
     ' "$CACHE_FILE")"
+
+    # Any seven_day_<bucket> with data (Opus/Sonnet/Fable/... — keys change over time)
+    api_buckets=$(jq -r '
+      to_entries[]
+      | select(.key | startswith("seven_day_"))
+      | select((.value | type) == "object" and .value.utilization != null)
+      | "\(.key | sub("^seven_day_"; ""))\t\(.value.utilization | floor)\t\(.value.resets_at // "")"
+    ' "$CACHE_FILE" 2>/dev/null)
 
     [ -z "$five_hour_used" ] && five_hour_used="$api_5h_used" && five_hour_reset="$api_5h_reset"
     [ -z "$seven_day_used" ] && seven_day_used="$api_7d_used" && seven_day_reset="$api_7d_reset"
@@ -424,8 +435,12 @@ fi
 if [ "$SHOW_RATE_LIMITS" = "true" ]; then
   print_limit_line "Session" "$five_hour_used" "$five_hour_reset"
   print_limit_line "Weekly"  "$seven_day_used" "$seven_day_reset"
-  print_limit_line "Opus"    "$opus_used"      "$opus_reset"
-  print_limit_line "Sonnet"  "$sonnet_used"    "$sonnet_reset"
+  if [ -n "$api_buckets" ]; then
+    while IFS=$'\t' read -r bkt_name bkt_used bkt_reset; do
+      [ -z "$bkt_name" ] && continue
+      print_limit_line "$(pretty_bucket "$bkt_name")" "$bkt_used" "$bkt_reset"
+    done <<< "$api_buckets"
+  fi
   if [ "$extra_enabled" = "true" ] && [ -n "$extra_used_pct" ]; then
     print_limit_line "Extra" "$extra_used_pct" ""
   fi

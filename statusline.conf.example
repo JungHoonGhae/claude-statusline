@@ -4,7 +4,7 @@
 # Or set STATUSLINE_CONF env var to use a different path
 
 # ── Toggle Sections ───────────────────────────────────────────────────────────
-# SHOW_RATE_LIMITS=true     # Session/Weekly/Opus/Sonnet rate limit bars
+# SHOW_RATE_LIMITS=true     # Session/Weekly + per-model rate limit bars (Opus/Sonnet/Fable/...)
 # SHOW_TOOLS=true           # Tool activity from transcript
 # SHOW_AGENTS=true          # Agent activity from transcript
 # SHOW_CCUSAGE=true         # Daily/monthly token cost stats (requires ccusage)
