@@ -134,9 +134,10 @@ Add to `~/.claude/settings.json`:
 
 ### Prerequisites
 
-- **jq** — `brew install jq` (macOS) / `sudo apt install jq` (Linux)
-- **curl** — pre-installed on most systems
-- **ccusage** (optional) — `npm install -g ccusage` for token cost tracking
+- **jq** and **curl** — the installers auto-install these via your package manager (brew / apt / dnf / yum / pacman / apk)
+- **Node.js** (optional) — the token cost section runs `npx ccusage@latest`; no global install needed
+
+If a dependency goes missing later (e.g. after a container restart), the statusline shows an install hint instead of silently hiding the section.
 
 ## Configuration
 
@@ -228,7 +229,7 @@ Since v1.2.2 the statusline shows `claude-statusline: jq not found` instead of s
 
 ### ccusage section missing
 
-The Today/Yesterday/Last 30 Days section needs `npx` (Node.js) available. The cache refreshes in the background, so the section can take one ~10s refresh cycle to appear after install.
+The Today/Yesterday/Last 30 Days section needs `npx` (Node.js) available. When it can't run, the statusline shows a dim `✗ ccusage: ...` hint with the reason. The cache refreshes in the background, so the section can take one ~10s refresh cycle to appear after install.
 
 ## Platform support
 

@@ -66,6 +66,11 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# Per-user dir — a shared /tmp path collides (and leaks data) between users
+CACHE_DIR="${TMPDIR:-/tmp}/claude-statusline-$(id -u)"
+mkdir -p "$CACHE_DIR" 2>/dev/null
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 SHOW_RATE_LIMITS=true
 SHOW_TOOLS=true
@@ -306,11 +311,12 @@ api_buckets=""
 extra_enabled=""; extra_used_pct=""
 
 if [ "$SHOW_RATE_LIMITS" = "true" ]; then
-  CACHE_FILE="/tmp/.claude-usage-cache.json"
+  CACHE_FILE="$CACHE_DIR/usage.json"
   CACHE_TTL=120
 
   fetch_usage() {
     local TOKEN
+    command -v curl >/dev/null 2>&1 || return 0
     TOKEN=$(get_oauth_token)
     if [ -n "$TOKEN" ]; then
       curl -s --max-time 3 "https://api.anthropic.com/api/oauth/usage" \
@@ -361,10 +367,11 @@ ctx_c=$(ctx_color "$used")
 
 # ── ccusage Token Stats (cached 10 min, background refresh) ──────────────────
 has_ccusage=0
+cc_error=""
 
 if [ "$SHOW_CCUSAGE" = "true" ]; then
   SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  CCUSAGE_CACHE="/tmp/.claude-ccusage-cache.json"
+  CCUSAGE_CACHE="$CACHE_DIR/ccusage.json"
   CCUSAGE_TTL=600
 
   if [ -f "$CCUSAGE_CACHE" ]; then
@@ -377,6 +384,10 @@ if [ "$SHOW_CCUSAGE" = "true" ]; then
   fi
 
   if [ -s "$CCUSAGE_CACHE" ]; then
+    cc_error=$(jq -r '.error // empty' "$CCUSAGE_CACHE" 2>/dev/null)
+  fi
+
+  if [ -s "$CCUSAGE_CACHE" ] && [ -z "$cc_error" ]; then
     eval "$(jq -r '
       @sh "today_cost=\(.today.totalCost // 0)",
       @sh "today_tokens=\(.today.totalTokens // 0 | floor)",
@@ -442,6 +453,9 @@ fi
 
 # Rate limit lines
 if [ "$SHOW_RATE_LIMITS" = "true" ]; then
+  if [ -z "$five_hour_used" ] && [ -z "$seven_day_used" ] && ! command -v curl >/dev/null 2>&1; then
+    printf "  \033[2m✗ rate limits unavailable — curl not found\033[0m\n"
+  fi
   print_limit_line "Session" "$five_hour_used" "$five_hour_reset"
   print_limit_line "Weekly"  "$seven_day_used" "$seven_day_reset"
   if [ -n "$api_buckets" ]; then
@@ -544,6 +558,9 @@ if [ "$SHOW_TOOLS" = "true" ] || [ "$SHOW_AGENTS" = "true" ]; then
 fi
 
 # Token Usage Stats (ccusage)
+if [ "$SHOW_CCUSAGE" = "true" ] && [ -n "$cc_error" ]; then
+  printf "  \033[2m✗ ccusage: %s\033[0m\n" "$cc_error"
+fi
 if [ "$SHOW_CCUSAGE" = "true" ] && [ "$has_ccusage" -eq 1 ]; then
   printf "  \033[2m─────────────────────────────────────────────\033[0m\n"
   printf "  \033[2mToday       \033[0m%20s\033[2m · %s tokens\033[0m\n" "$today_cost_str" "$today_tok_str"
