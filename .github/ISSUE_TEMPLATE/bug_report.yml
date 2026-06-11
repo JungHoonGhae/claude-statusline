@@ -1,0 +1,56 @@
+name: Bug report
+description: Report something that isn't rendering or working correctly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to file a bug report!
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+      placeholder: The rate-limit lines are blank even though I'm on a Max plan...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: Diagnostic output
+      description: |
+        Run this and paste the output (redact tokens if any appear):
+        ```
+        echo '{}' | bash ~/.claude/statusline-command.sh
+        ```
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.3 / Ubuntu 24.04 / Windows 11 (Git Bash)
+    validations:
+      required: true
+  - type: input
+    id: cc-version
+    attributes:
+      label: Claude Code version
+      description: Run `claude --version`
+      placeholder: 2.1.170
+    validations:
+      required: true
+  - type: input
+    id: install-method
+    attributes:
+      label: Install method
+      placeholder: plugin / curl one-liner / manual
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, config (`~/.claude/statusline.conf`), or other context.
+    validations:
+      required: false

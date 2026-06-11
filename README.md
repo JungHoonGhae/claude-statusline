@@ -239,6 +239,13 @@ Works on **macOS**, **Linux**, and **Windows** (Git Bash / WSL).
 - **Linux**: OAuth token from `~/.claude/.credentials.json` or GNOME Keyring (`secret-tool`)
 - **Windows**: OAuth token from `~/.claude/.credentials.json` or `%APPDATA%/Claude/credentials.json`
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for how to test
+changes and the project guidelines. By participating you agree to the
+[Code of Conduct](CODE_OF_CONDUCT.md). To report a security issue, see the
+[Security Policy](SECURITY.md).
+
 ## Credits
 
 Inspired by [jarrodwatts/claude-hud](https://github.com/jarrodwatts/claude-hud).
