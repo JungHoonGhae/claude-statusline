@@ -49,10 +49,8 @@ cat > "$SAMPLE" <<EOF
   "model": {"id": "claude-fable-5[1m]", "display_name": "Fable 5"},
   "cwd": "/Users/junghoon/workspace/projects/oss-qraft",
   "workspace": {"current_dir": "/Users/junghoon/workspace/projects/oss-qraft"},
-  "session_name": "refactor-pipeline",
   "transcript_path": "$WORK/transcript.jsonl",
   "version": "2.1.170",
-  "fast_mode": true,
   "effort": {"level": "high"},
   "thinking": {"enabled": true},
   "pr": {"number": 42, "review_state": "approved"},
@@ -85,13 +83,14 @@ restore() {
 }
 trap restore EXIT
 
+# Only buckets the real OAuth API actually returns (seven_day_opus / _sonnet).
+# There is no seven_day_fable key yet, so don't fake one — it would never render.
 cat > "$CACHE_DIR/usage.json" <<EOF
 {
   "five_hour":  {"utilization": 17, "resets_at": "$(iso 5220)"},
   "seven_day":  {"utilization": 17, "resets_at": "$(iso 345600)"},
-  "seven_day_fable":  {"utilization": 37, "resets_at": "$(iso 399600)"},
   "seven_day_opus":   {"utilization": 12, "resets_at": "$(iso 399600)"},
-  "seven_day_sonnet": {"utilization": 0,  "resets_at": "$(iso 399600)"},
+  "seven_day_sonnet": {"utilization": 5,  "resets_at": "$(iso 399600)"},
   "extra_usage": {"is_enabled": false}
 }
 EOF

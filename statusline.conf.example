@@ -11,10 +11,11 @@
 # SHOW_CCUSAGE=true         # Daily/monthly token cost stats (requires Node.js/npx)
 
 # ── Header Extras ─────────────────────────────────────────────────────────────
-# SHOW_CONTEXT_BAR=true     # Mini gauge next to ctx % in the header
+# SHOW_CONTEXT_BAR=true     # Small 5-dot gauge next to ctx % in the header
 # SHOW_BURN_RATE=true       # ~$/hr spend rate (cost ÷ session duration)
 # SHOW_GIT_AHEAD=true       # ↑ahead ↓behind vs upstream branch
 # SHOW_LINKS=true           # Clickable PR link (OSC 8; auto-off inside tmux)
+# SHOW_SESSION_NAME=false   # Show the /rename session name in the header
 
 # ── Context Thresholds ────────────────────────────────────────────────────────
 # CONTEXT_WARN_PCT=30       # Yellow warning threshold (%)

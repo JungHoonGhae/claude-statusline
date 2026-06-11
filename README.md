@@ -38,12 +38,11 @@ This statusline fixes all of that.
 ## What it shows
 
 ```
-  Fable 5 ⚡fast high ✦ │ ctx 14% ●○○○○○○○○○ 143.5K/1M │ oss-qraft (main)* ↑2 │ PR #42 ✓ │ $50.07 · 2h 3m · ~$24/hr +1036 -49 · refactor-pipeline
+  Fable 5 high ✦ │ ctx 14% ● ○ ○ ○ ○ 143.5K/1M │ oss-qraft (main) │ PR #42 ✓ │ $50.07 · 2h 3m · ~$24/hr +1036 -49
   Session ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 1h 27m
   Weekly  ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 3d 23h
-  Fable   ● ● ● ● ● ● ● ○ ○ ○  63% left  Resets in 4d 15h
   Opus    ● ● ● ● ● ● ● ● ● ○  88% left  Resets in 4d 15h
-  Sonnet  ● ● ● ● ● ● ● ● ● ●  100% left  Resets in 4d 15h
+  Sonnet  ● ● ● ● ● ● ● ● ● ○  95% left  Resets in 4d 15h
   ✓ Bash×40  ✓ Edit×19  ✓ Read×12  ✓ Write×11  ✓ Grep×2
   ◐ Explore Explore current Qraft codebase
   ─────────────────────────────────────────────
@@ -54,7 +53,7 @@ This statusline fixes all of that.
 
 | Section | Details |
 |---------|---------|
-| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking), context % with mini-bar and token count (143.5K/1M), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, session name |
+| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking), context % with mini-bar and token count (143.5K/1M), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, optional session name |
 | **Compaction Warning** | Red warning when context exceeds critical threshold |
 | **Rate Limits** | Session (5h) / Weekly (7d) / per-model buckets (Opus, Sonnet, Fable, … auto-detected) / Extra usage — gauge bar + % left + reset time |
 | **Tool Activity** | Running tools, completed tool counts, active agents |
@@ -75,9 +74,9 @@ Badges only appear when the data exists — e.g. `⚡fast` shows only with fast 
 
 ### Per-model rate limit buckets
 
-Model-specific weekly buckets (`Fable`, `Opus`, `Sonnet`, `Haiku`, …) are **auto-detected** from the OAuth usage API — whatever buckets Anthropic reports for your plan show up automatically, so new models appear without a script update. They are ordered by model capability (most capable first), and buckets the API reports as `null` (inactive for your plan) are hidden. An `Extra` gauge appears when extra usage credits are enabled on your account.
+Model-specific weekly buckets are **auto-detected** from the OAuth usage API — whatever buckets Anthropic reports for your plan show up automatically, so new models appear without a script update. They are ordered by model capability (most capable first, `Fable` > `Opus` > `Sonnet` > `Haiku`), and buckets the API reports as `null` (inactive for your plan) are hidden. An `Extra` gauge appears when extra usage credits are enabled on your account.
 
-> Note: which model buckets exist depends on your plan and usage — most accounts only see a subset (e.g. just `Sonnet`). The screenshot above shows the full layout for illustration.
+> Note: which buckets exist depends on your plan and usage. Today the API exposes `Opus` and `Sonnet` sub-limits (shown above); many accounts only see one. If Anthropic adds a dedicated bucket for a newer model, it appears automatically at the top — no update needed.
 
 ### Color coding
 
@@ -159,6 +158,7 @@ SHOW_CONTEXT_BAR=true
 SHOW_BURN_RATE=true
 SHOW_GIT_AHEAD=true
 SHOW_LINKS=true
+SHOW_SESSION_NAME=false
 
 # Context thresholds
 CONTEXT_WARN_PCT=30       # Yellow warning
@@ -174,10 +174,11 @@ DAILY_BUDGET=0
 | `SHOW_TOOLS` | `true` | Tool activity from transcript |
 | `SHOW_AGENTS` | `true` | Agent activity from transcript |
 | `SHOW_CCUSAGE` | `true` | Daily/monthly token cost stats |
-| `SHOW_CONTEXT_BAR` | `true` | Mini gauge next to ctx % |
+| `SHOW_CONTEXT_BAR` | `true` | Small 5-dot gauge next to ctx % |
 | `SHOW_BURN_RATE` | `true` | ~$/hr spend rate in the header |
 | `SHOW_GIT_AHEAD` | `true` | ↑ahead ↓behind vs upstream |
 | `SHOW_LINKS` | `true` | Clickable PR link (OSC 8; auto-off in tmux) |
+| `SHOW_SESSION_NAME` | `false` | Show the `/rename` session name in the header |
 | `CONTEXT_WARN_PCT` | `30` | Context % threshold for yellow |
 | `CONTEXT_CRIT_PCT` | `70` | Context % threshold for red + compaction warning |
 | `DAILY_BUDGET` | `0` | Daily budget alert in USD (0 = disabled) |

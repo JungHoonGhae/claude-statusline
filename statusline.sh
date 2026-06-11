@@ -81,6 +81,7 @@ SHOW_CONTEXT_BAR=${SHOW_CONTEXT_BAR:-true}
 SHOW_BURN_RATE=${SHOW_BURN_RATE:-true}
 SHOW_GIT_AHEAD=${SHOW_GIT_AHEAD:-true}
 SHOW_LINKS=${SHOW_LINKS:-true}
+SHOW_SESSION_NAME=${SHOW_SESSION_NAME:-false}
 CONTEXT_WARN_PCT=${CONTEXT_WARN_PCT:-30}
 CONTEXT_CRIT_PCT=${CONTEXT_CRIT_PCT:-70}
 DAILY_BUDGET=${DAILY_BUDGET:-0}
@@ -92,7 +93,7 @@ if [ -f "$STATUSLINE_CONF" ]; then
     val=$(echo "$val" | tr -d '[:space:]')
     case "$key" in
       SHOW_RATE_LIMITS|SHOW_TOOLS|SHOW_AGENTS|SHOW_CCUSAGE) eval "$key=$val" ;;
-      SHOW_CONTEXT_BAR|SHOW_BURN_RATE|SHOW_GIT_AHEAD|SHOW_LINKS) eval "$key=$val" ;;
+      SHOW_CONTEXT_BAR|SHOW_BURN_RATE|SHOW_GIT_AHEAD|SHOW_LINKS|SHOW_SESSION_NAME) eval "$key=$val" ;;
       CONTEXT_WARN_PCT|CONTEXT_CRIT_PCT|DAILY_BUDGET) eval "$key=$val" ;;
     esac
   done < <(grep -v '^\s*#' "$STATUSLINE_CONF" | grep -v '^\s*$')
@@ -219,9 +220,9 @@ osc_link() {
   fi
 }
 
-# Session name (truncated; long /rename labels would blow up line 1)
+# Session name (opt-in; truncated, since long /rename labels blow up line 1)
 session_str=""
-if [ -n "$session_name" ]; then
+if [ "$SHOW_SESSION_NAME" = "true" ] && [ -n "$session_name" ]; then
   sn=$session_name
   [ "${#sn}" -gt 24 ] && sn="${sn:0:23}…"
   session_str=" \033[2m· ${sn}\033[0m"
@@ -268,15 +269,16 @@ make_bar() {
   printf '%b' "$bar"
 }
 
-# Compact context gauge for the header: filled = used%, colored low=good
+# Small 5-segment context gauge for the header (spaced, like the rate-limit bars)
 ctx_bar() {
   local pct=$1 c
   c=$(ctx_color "$pct")
-  local filled=$((pct / 10))
-  [ "$filled" -gt 10 ] && filled=10
+  local filled=$(( (pct + 19) / 20 ))   # round up so any usage shows ≥1 dot
+  [ "$filled" -gt 5 ] && filled=5
   [ "$filled" -lt 0 ] && filled=0
   local bar="" i=0
-  while [ "$i" -lt 10 ]; do
+  while [ "$i" -lt 5 ]; do
+    [ "$i" -gt 0 ] && bar="${bar} "
     if [ "$i" -lt "$filled" ]; then
       bar="${bar}${c}●\033[0m"
     else
