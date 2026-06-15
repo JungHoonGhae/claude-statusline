@@ -257,6 +257,16 @@ Works on **macOS**, **Linux**, and **Windows** (Git Bash / WSL).
 - **Linux**: OAuth token from `~/.claude/.credentials.json` or GNOME Keyring (`secret-tool`)
 - **Windows**: OAuth token from `~/.claude/.credentials.json` or `%APPDATA%/Claude/credentials.json`
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history. Recent highlights:
+
+- **1.4.1** — responsive 3-tier layout (`$COLUMNS`-aware), `idle` label for unused buckets, accurate screenshot
+- **1.4.0** — header extras: context bar, ~$/hr burn rate, git ↑ahead ↓behind, clickable PR link
+- **1.3.0** — auto-install dependencies, surface every silent failure, capability-ordered model buckets
+- **1.2.x** — auto-detected per-model rate buckets, ccusage v18 compatibility
+- **1.1.0** — v2.1.x stdin support: model badges, context tokens, PR badge, lines +/-
+
 ## Contributing
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for how to test
