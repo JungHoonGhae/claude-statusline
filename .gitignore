@@ -19,3 +19,6 @@ Thumbs.db
 # Temp files
 tmp/
 *.tmp
+
+# Local agent guidance (not distributed)
+CLAUDE.md
