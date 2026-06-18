@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.4.2] — 2026-06-15
+
+### Fixed
+- Rate-limit gauges no longer pack their dots together on medium-width terminals.
+  The rate-limit lines now compact at their own threshold (~64 cols) instead of
+  sharing the header's (~100), and the tight form uses 5 spaced dots — so the
+  dots stay legible and evenly spaced at every width.
+
 ## [1.4.1] — 2026-06-15
 
 ### Added
@@ -86,6 +94,7 @@ All notable changes to this project are documented here. The format is based on
   tool/agent activity, and daily/monthly token costs. Plugin marketplace support,
   one-liner installer, and Windows (Git Bash / MSYS2 / WSL) support.
 
+[1.4.2]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/JungHoonGhae/claude-statusline/releases/tag/v1.4.1
 [1.4.0]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.2.2...v1.3.0

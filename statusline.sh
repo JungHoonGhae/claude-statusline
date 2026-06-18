@@ -99,19 +99,26 @@ if [ -f "$STATUSLINE_CONF" ]; then
   done < <(grep -v '^\s*#' "$STATUSLINE_CONF" | grep -v '^\s*$')
 fi
 
-# Terminal width — Claude Code exports $COLUMNS. Three tiers:
-#   WIDE    (>= WIDE_COLS):  full header incl. ctx bar, token detail, burn rate
-#   medium:                  standard header, no extras
-#   COMPACT (<  COMPACT_COLS): minimal header + compacted rate-limit lines
+# Terminal width — Claude Code exports $COLUMNS. The header and the rate-limit
+# lines compact at *independent* thresholds (the header is far longer, so it
+# needs to shrink well before the rate-limit lines do — otherwise the gauges get
+# packed together while there's still plenty of room).
+#   WIDE      (>= WIDE_COLS):     full header incl. ctx bar, token detail, burn rate
+#   medium:                       standard header, no extras
+#   COMPACT   (<  COMPACT_COLS):  minimal header (model | ctx% | project | cost)
+#   RL_COMPACT(<  RLCOMPACT_COLS):tight rate-limit lines (5 spaced dots, no labels)
 # COLUMNS unset (0) → assume wide so piped/test use keeps the full layout.
 COLS=${COLUMNS:-0}
 COMPACT_COLS=100   # minimal header below this (standard header needs ~96 cols)
 WIDE_COLS=132      # ctx bar + tokens + burn rate above this (full header ~129 cols)
+RLCOMPACT_COLS=64  # tighten rate-limit lines only below this (normal line ~56 cols)
 COMPACT=0
 WIDE=1
+RL_COMPACT=0
 if [ "$COLS" -gt 0 ] 2>/dev/null; then
   [ "$COLS" -lt "$COMPACT_COLS" ] && COMPACT=1
   [ "$COLS" -lt "$WIDE_COLS" ] && WIDE=0
+  [ "$COLS" -lt "$RLCOMPACT_COLS" ] && RL_COMPACT=1
 fi
 # Links can leak escape codes through tmux without passthrough — disable there
 [ -n "$TMUX" ] && SHOW_LINKS=false
@@ -252,9 +259,9 @@ ctx_color() {
 }
 
 make_bar() {
-  local pct=$1
-  local filled=$((pct / 10))
-  [ "$filled" -gt 10 ] && filled=10
+  local pct=$1 count=${2:-10}
+  local filled=$(( pct * count / 100 ))
+  [ "$filled" -gt "$count" ] && filled=$count
 
   local color
   if [ "$pct" -gt 50 ]; then
@@ -265,10 +272,9 @@ make_bar() {
     color="\033[31m"
   fi
 
-  local bar="" i=0 sep=" "
-  [ "$COMPACT" -eq 1 ] && sep=""
-  while [ "$i" -lt 10 ]; do
-    [ "$i" -gt 0 ] && bar="${bar}${sep}"
+  local bar="" i=0
+  while [ "$i" -lt "$count" ]; do
+    [ "$i" -gt 0 ] && bar="${bar} "   # always spaced for legibility
     if [ "$i" -lt "$filled" ]; then
       bar="${bar}${color}●\033[0m"
     else
@@ -349,10 +355,11 @@ print_limit_line() {
   local label=$1 used_val=$2 reset_val=$3
   [ -n "$used_val" ] || return
   local left=$((100 - used_val))
-  if [ "$COMPACT" -eq 1 ]; then
+  if [ "$RL_COMPACT" -eq 1 ]; then
+    # Very narrow: 5 spaced dots, short reset, no "left"/"Resets in"
     local rem; rem=$(format_remaining_epoch "$reset_val"); rem=${rem#Resets in }; rem=${rem// /}
-    printf "  \033[2m%-6.6s\033[0m%b \033[36m%s%%\033[0m \033[2m%s\033[0m\n" \
-      "$label" "$(make_bar "$left")" "$left" "$rem"
+    printf "  \033[2m%-7.7s\033[0m %b \033[36m%s%%\033[0m \033[2m%s\033[0m\n" \
+      "$label" "$(make_bar "$left" 5)" "$left" "$rem"
   else
     printf "  \033[2m%-7.7s\033[0m %b %s  \033[36m%s%% left\033[0m  \033[2m%s\033[0m\n" \
       "$label" "$(status_dot "$left")" "$(make_bar "$left")" "$left" "$(format_remaining_epoch "$reset_val")"
