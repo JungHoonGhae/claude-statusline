@@ -4,6 +4,11 @@
 </div>
 
 <p align="center">
+  <strong>English</strong> ·
+  <a href="README.ko.md">한국어</a>
+</p>
+
+<p align="center">
   <a href="#installation"><strong>Install</strong></a> ·
   <a href="#what-it-shows"><strong>Features</strong></a> ·
   <a href="#configuration"><strong>Config</strong></a> ·
@@ -52,7 +57,7 @@ This statusline fixes all of that.
 
 | Section | Details |
 |---------|---------|
-| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking), context % with mini-bar and token count (143.5K/1M), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, optional session name |
+| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking, ◑ output style, ⛭ agent), context % with mini-bar and token count (143.5K/1M, marked ⚠200k+ past the premium threshold), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, optional session name |
 | **Compaction Warning** | Red warning when context exceeds critical threshold |
 | **Rate Limits** | Session (5h) / Weekly (7d) / per-model buckets (Opus, Sonnet, Fable, … auto-detected) / Extra usage — gauge bar + % left + reset time |
 | **Tool Activity** | Running tools, completed tool counts, active agents |
@@ -66,6 +71,9 @@ This statusline fixes all of that.
 | `⚡fast` | Fast mode enabled |
 | `high` | Reasoning effort level (low/medium/high/max) |
 | `✦` | Extended thinking enabled |
+| `◑explanatory` | Active output style (only when not `default`) |
+| `⛭security-reviewer` | Active agent (during `--agent` sessions) |
+| `⚠200k+` | Past the 200k premium long-context billing threshold (>200k-window models only) |
 | `PR #42 ✓` | Open PR — ✓ approved · ● pending · ✗ changes requested · ◌ draft |
 | `+1036 -49` | Lines added/removed this session |
 
@@ -261,6 +269,7 @@ Works on **macOS**, **Linux**, and **Windows** (Git Bash / WSL).
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history. Recent highlights:
 
+- **1.5.0** — premium long-context `⚠200k+` marker, output-style and agent badges, Korean README
 - **1.4.1** — responsive 3-tier layout (`$COLUMNS`-aware), `idle` label for unused buckets, accurate screenshot
 - **1.4.0** — header extras: context bar, ~$/hr burn rate, git ↑ahead ↓behind, clickable PR link
 - **1.3.0** — auto-install dependencies, surface every silent failure, capability-ordered model buckets

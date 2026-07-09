@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [1.5.0] — 2026-07-09
+
+### Added
+- **Premium long-context marker.** On >200k-window models (e.g. the 1M-context
+  Opus), the header shows `⚠200k+` next to the token count once
+  `exceeds_200k_tokens` trips — the point where tokens bill at the premium
+  long-context rate. Suppressed on standard 200k models, where the existing
+  compaction warning already covers "context full".
+- **Output-style badge.** A `◑<name>` badge surfaces the active output style
+  when it is anything other than `default`, so a behavior-changing style is
+  never silently in effect.
+- **Agent badge.** A `⛭<name>` badge shows the active agent during `--agent`
+  sessions.
+- Korean translation of the README ([README.ko.md](README.ko.md)), with
+  English ↔ 한국어 language links at the top of both files.
+
 ## [1.4.2] — 2026-06-15
 
 ### Fixed

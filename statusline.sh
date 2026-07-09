@@ -142,6 +142,9 @@ eval "$(jq -r '
   @sh "fast_mode=\(.fast_mode // false)",
   @sh "effort=\(.effort.level // "")",
   @sh "thinking=\(.thinking.enabled // false)",
+  @sh "exceeds_200k=\(.exceeds_200k_tokens // false)",
+  @sh "output_style=\(.output_style.name // "")",
+  @sh "agent_name=\(.agent.name // "")",
   @sh "pr_number=\(.pr.number // "")",
   @sh "pr_state=\(.pr.review_state // "")",
   @sh "pr_url=\(.pr.url // "")",
@@ -522,11 +525,15 @@ fi
 # ══════════════════════════════════════════════════════════════════════════════
 echo ""
 
-# Model badges: fast mode / effort level / extended thinking
+# Model badges: fast mode / effort / thinking / output style / agent.
+# Each surfaces hidden session state that silently changes Claude's behavior;
+# style and agent show only when set (default/absent = no badge = no noise).
 model_badges=""
 [ "$fast_mode" = "true" ] && model_badges="${model_badges} \033[36m⚡fast\033[0m"
 [ -n "$effort" ] && model_badges="${model_badges} \033[2m${effort}\033[0m"
 [ "$thinking" = "true" ] && model_badges="${model_badges} \033[2m✦\033[0m"
+[ -n "$output_style" ] && [ "$output_style" != "default" ] && model_badges="${model_badges} \033[35m◑${output_style}\033[0m"
+[ -n "$agent_name" ] && model_badges="${model_badges} \033[34m⛭${agent_name}\033[0m"
 
 # Context mini-bar (low usage = good = green) + used/total tokens — wide only
 ctx_bar_str=""
@@ -536,6 +543,12 @@ fi
 ctx_detail=""
 if [ -n "$ctx_tokens" ] && [ "$ctx_size" -gt 0 ] 2>/dev/null && [ "$WIDE" -eq 1 ]; then
   ctx_detail=" \033[2m$(fmt_tokens "$ctx_tokens")/$(fmt_tokens "$ctx_size")\033[0m"
+  # Premium long-context pricing marker: only on >200k-window models, where
+  # crossing 200k means premium billing (not just "context full" — the
+  # compaction warning already covers that on standard 200k models).
+  if [ "$exceeds_200k" = "true" ] && [ "$ctx_size" -gt 200000 ] 2>/dev/null; then
+    ctx_detail="${ctx_detail} \033[33m⚠200k+\033[0m"
+  fi
 fi
 
 # PR badge with review state (clickable when a URL is present)
