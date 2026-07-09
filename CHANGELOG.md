@@ -112,6 +112,7 @@ All notable changes to this project are documented here. The format is based on
   tool/agent activity, and daily/monthly token costs. Plugin marketplace support,
   one-liner installer, and Windows (Git Bash / MSYS2 / WSL) support.
 
+[1.5.0]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/JungHoonGhae/claude-statusline/releases/tag/v1.4.1
 [1.4.0]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.3.0...v1.4.0
