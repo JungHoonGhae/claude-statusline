@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-07-13
+
+### Fixed
+- **Errored ccusage cache no longer sticks for 10 minutes.** A failure (e.g.
+  `npx not found` before Node is installed) was cached under the same 10-minute
+  TTL as a success, so the statusline kept showing the stale error long after
+  the cause was fixed. Error results now expire after 1 minute, so installing
+  Node — or otherwise resolving the cause — recovers on the next refresh.
+
 ## [1.5.0] — 2026-07-09
 
 ### Added
