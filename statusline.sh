@@ -6,7 +6,7 @@
 # tool/agent activity, and daily token costs — all in pure bash.
 #
 # Dependencies: jq, curl
-# Optional: ccusage (npm) for token cost tracking
+# Token costs: computed from local transcripts with LiteLLM pricing (no Node.js)
 
 # ── Platform Detection ────────────────────────────────────────────────────────
 OS_TYPE="$(uname -s)"

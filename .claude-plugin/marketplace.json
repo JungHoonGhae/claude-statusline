@@ -9,7 +9,7 @@
       "name": "claude-statusline",
       "source": "./",
       "description": "A rich statusline for Claude Code — context, rate limits, tool activity, token costs.",
-      "version": "1.5.1",
+      "version": "1.6.0",
       "author": {
         "name": "JungHoon Ghae"
       }
