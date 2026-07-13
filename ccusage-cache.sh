@@ -23,17 +23,24 @@ days_ago() {
 CACHE_DIR="${TMPDIR:-/tmp}/claude-statusline-$(id -u)"
 mkdir -p "$CACHE_DIR" 2>/dev/null
 CACHE_FILE="$CACHE_DIR/ccusage.json"
-CACHE_TTL=600  # 10 minutes
+CACHE_TTL=600        # 10 minutes for a successful result
+ERROR_CACHE_TTL=60   # 1 minute for an error result
 
 write_error() {
   printf '{"error":"%s"}\n' "$1" > "$CACHE_FILE"
   exit 0
 }
 
-# Check if cache is fresh
+# Check if cache is fresh. Error results expire faster so that fixing the
+# underlying cause (installing Node, etc.) recovers on the next refresh instead
+# of showing a stale error for the full 10 minutes.
 if [ -f "$CACHE_FILE" ]; then
   cache_age=$(( $(date +%s) - $(get_mtime "$CACHE_FILE") ))
-  if [ "$cache_age" -lt "$CACHE_TTL" ]; then
+  ttl=$CACHE_TTL
+  if grep -q '"error"' "$CACHE_FILE" 2>/dev/null; then
+    ttl=$ERROR_CACHE_TTL
+  fi
+  if [ "$cache_age" -lt "$ttl" ]; then
     exit 0  # cache is fresh
   fi
 fi
