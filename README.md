@@ -145,7 +145,8 @@ Add to `~/.claude/settings.json`:
 ### Prerequisites
 
 - **jq** and **curl** — the installers auto-install these via your package manager (brew / apt / dnf / yum / pacman / apk)
-- **Node.js** (optional) — the token cost section runs `npx ccusage@latest`; no global install needed
+
+The token cost section is pure bash + jq (no Node.js). It reads Claude Code's local transcripts directly and prices them with per-model rates from [LiteLLM's pricing database](https://github.com/BerriAI/litellm) — fetched once a day via `curl` and cached. Offline or without `curl`, a built-in price table keeps the section working.
 
 If a dependency goes missing later (e.g. after a container restart), the statusline shows an install hint instead of silently hiding the section.
 
@@ -204,7 +205,7 @@ See [statusline.conf.example](./statusline.conf.example) for a fully commented t
 | **Install** | Plugin marketplace, one-liner `curl`, or copy 2 files | Plugin marketplace |
 | **Dependencies** | `jq` only | Node.js 18+ |
 | **Rate limits** | stdin + OAuth API (model-specific + extra usage) | stdin only |
-| **Token costs** | Daily/monthly via ccusage | — |
+| **Token costs** | Daily/monthly (transcripts + LiteLLM pricing) | — |
 | **Budget alert** | Configurable daily limit | — |
 | **Compaction warning** | Context threshold alert | — |
 | **Configuration** | Simple KEY=value conf file | JSON config + `/configure` command |
@@ -222,7 +223,7 @@ statusline.sh
   ├── OAuth API (cached 2m)        Fallback + per-model buckets (auto-detected) + extra usage
   ├── git CLI                      Branch & dirty state (stdin no longer carries .git)
   ├── Transcript JSONL parsing     Tool & agent activity
-  └── ccusage-cache.sh (bg, 10m)  Token cost aggregation
+  └── ccusage-cache.sh (bg, 10m)  Token cost aggregation (bash+jq, LiteLLM pricing)
           │
 stdout → Claude Code displays
 ```
@@ -234,7 +235,7 @@ stdout → Claude Code displays
 | Per-model limits (Opus/Sonnet/Fable/…), extra usage | OAuth API | 2 min |
 | Git branch & dirty state | `git` CLI (stdin fallback) | — |
 | Tool & agent activity | Transcript JSONL | — |
-| Token costs | ccusage | 10 min (background) |
+| Token costs | Transcript JSONL + LiteLLM pricing | 10 min (background) |
 
 ## Troubleshooting
 
@@ -249,13 +250,11 @@ RUN apt-get update && apt-get install -y jq curl git
 RUN apk add --no-cache jq curl git bash
 ```
 
-Node.js is also needed in the image if you use the ccusage token cost section.
-
 Since v1.2.2 the statusline shows `claude-statusline: jq not found` instead of silently going blank.
 
-### ccusage section missing
+### Token cost section missing
 
-The Today/Yesterday/Last 30 Days section needs `npx` (Node.js) available. When it can't run, the statusline shows a dim `✗ ccusage: ...` hint with the reason. The cache refreshes in the background, so the section can take one ~10s refresh cycle to appear after install.
+The Today/Yesterday/Last 30 Days section needs `jq` and Claude Code's local transcripts under `~/.claude/projects`. When it can't run, the statusline shows a dim `✗ ccusage: ...` hint with the reason. The cache refreshes in the background, so the section can take one ~10s refresh cycle to appear after install. Pricing is fetched from LiteLLM via `curl` and cached for a day; without `curl` (or offline) a built-in price table is used instead.
 
 ## Platform support
 
@@ -286,7 +285,7 @@ changes and the project guidelines. By participating you agree to the
 ## Credits
 
 Inspired by [jarrodwatts/claude-hud](https://github.com/jarrodwatts/claude-hud).
-Token cost tracking powered by [ryoppippi/ccusage](https://github.com/ryoppippi/ccusage).
+Token cost tracking inspired by [ryoppippi/ccusage](https://github.com/ryoppippi/ccusage); per-model pricing from [LiteLLM](https://github.com/BerriAI/litellm).
 
 ## Support
 

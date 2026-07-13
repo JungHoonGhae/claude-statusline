@@ -6,7 +6,21 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-## [1.5.1] — 2026-07-13
+## [1.6.0] — 2026-07-13
+
+### Changed
+- **Token cost tracking no longer needs Node.js.** The Today / Yesterday /
+  Last 30 Days section previously shelled out to `npx ccusage@latest`, so the
+  cost line silently disappeared on machines without Node.js. It now reads
+  Claude Code's local transcripts directly and prices them in pure bash + jq —
+  the plugin works fully on install with only `jq` (already a dependency).
+  - Per-model rates come from [LiteLLM's pricing database](https://github.com/BerriAI/litellm)
+    (the same source ccusage uses), fetched once a day via `curl` and cached.
+    Offline or without `curl`, a built-in price table keeps the section working.
+  - Output matches `ccusage` exactly (validated token-for-token and cent-for-cent
+    on Opus/Sonnet/Haiku), and refreshes in ~0.6s instead of ~5s.
+  - Covers all current model families including Opus 4.x, Sonnet 5/4.6, Haiku 4.5,
+    and Fable/Mythos 5.
 
 ### Fixed
 - **Errored ccusage cache no longer sticks for 10 minutes.** A failure (e.g.
