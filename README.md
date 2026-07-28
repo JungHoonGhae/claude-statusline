@@ -44,6 +44,7 @@ This statusline fixes all of that.
 
 ```
   Fable 5 high ✦ │ ctx 14% ● ○ ○ ○ ○ 143.5K/1M │ oss-qraft (main) │ PR #42 ✓ │ $50.07 · 2h 3m · ~$24/hr +1036 -49
+  Smart   ● ● ● ● ● ● ● ● ● ● ● 119% used  143.5K/120K zone
   Session ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 1h 27m
   Weekly  ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 3d 23h
   Sonnet  ● ● ● ● ● ● ● ● ● ○  95% left  Resets in 4d 15h
@@ -59,6 +60,7 @@ This statusline fixes all of that.
 |---------|---------|
 | **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking, ◑ output style, ⛭ agent), context % with mini-bar and token count (143.5K/1M, marked ⚠200k+ past the premium threshold), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, optional session name |
 | **Compaction Warning** | Red warning when context exceeds critical threshold |
+| **Smart Zone** | How much of the ~120k-token span the model still reasons sharply over has been used — the number a 1M window hides. Gauge + % used + tokens/zone |
 | **Rate Limits** | Session (5h) / Weekly (7d) / per-model buckets (Opus, Sonnet, Fable, … auto-detected) / Extra usage — gauge bar + % left + reset time |
 | **Tool Activity** | Running tools, completed tool counts, active agents |
 | **Token Costs** | Today / Yesterday / Last 30 days — cost & token count |
@@ -171,6 +173,7 @@ SHOW_SESSION_NAME=false
 # Context thresholds
 CONTEXT_WARN_PCT=30       # Yellow warning
 CONTEXT_CRIT_PCT=70       # Red + compaction warning
+SMART_ZONE_TOKENS=120000  # Size of the "Smart" row's zone (0 = hide the row)
 
 # Budget alert (0 = disabled)
 DAILY_BUDGET=0
@@ -189,6 +192,7 @@ DAILY_BUDGET=0
 | `SHOW_SESSION_NAME` | `false` | Show the `/rename` session name in the header |
 | `CONTEXT_WARN_PCT` | `30` | Context % threshold for yellow |
 | `CONTEXT_CRIT_PCT` | `70` | Context % threshold for red + compaction warning |
+| `SMART_ZONE_TOKENS` | `120000` | Smart-zone size for the `Smart` row — the span the model still reasons sharply over, far below a 1M window (`0` = hide the row) |
 | `DAILY_BUDGET` | `0` | Daily budget alert in USD (0 = disabled) |
 
 Every option can be set in the conf file **or** as an environment variable (the conf

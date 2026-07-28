@@ -84,6 +84,9 @@ SHOW_LINKS=${SHOW_LINKS:-true}
 SHOW_SESSION_NAME=${SHOW_SESSION_NAME:-false}
 CONTEXT_WARN_PCT=${CONTEXT_WARN_PCT:-30}
 CONTEXT_CRIT_PCT=${CONTEXT_CRIT_PCT:-70}
+# "Smart zone": the span a model actually reasons sharply over (~120k tokens),
+# far below the advertised window on 1M-token models. 0 disables.
+SMART_ZONE_TOKENS=${SMART_ZONE_TOKENS:-120000}
 DAILY_BUDGET=${DAILY_BUDGET:-0}
 
 STATUSLINE_CONF="${STATUSLINE_CONF:-$HOME/.claude/statusline.conf}"
@@ -94,10 +97,17 @@ if [ -f "$STATUSLINE_CONF" ]; then
     case "$key" in
       SHOW_RATE_LIMITS|SHOW_TOOLS|SHOW_AGENTS|SHOW_CCUSAGE) eval "$key=$val" ;;
       SHOW_CONTEXT_BAR|SHOW_BURN_RATE|SHOW_GIT_AHEAD|SHOW_LINKS|SHOW_SESSION_NAME) eval "$key=$val" ;;
-      CONTEXT_WARN_PCT|CONTEXT_CRIT_PCT|DAILY_BUDGET) eval "$key=$val" ;;
+      CONTEXT_WARN_PCT|CONTEXT_CRIT_PCT|DAILY_BUDGET|SMART_ZONE_TOKENS) eval "$key=$val" ;;
     esac
   done < <(grep -v '^\s*#' "$STATUSLINE_CONF" | grep -v '^\s*$')
 fi
+
+# A non-numeric SMART_ZONE_TOKENS would otherwise drop the Smart row without a
+# word — 0 is the documented off-switch, garbage is a typo worth saying out loud.
+smart_zone_err=""
+case "$SMART_ZONE_TOKENS" in
+  ''|*[!0-9]*) smart_zone_err=$SMART_ZONE_TOKENS; SMART_ZONE_TOKENS=0 ;;
+esac
 
 # Terminal width — Claude Code exports $COLUMNS. The header and the rate-limit
 # lines compact at *independent* thresholds (the header is far longer, so it
@@ -288,15 +298,28 @@ make_bar() {
   printf '%b' "$bar"
 }
 
-# Small 5-segment context gauge for the header (spaced, like the rate-limit bars)
+# Smart-zone color: fine until 70% of the zone, warn to the edge, red past it.
+sz_color() {
+  local pct=$1
+  if [ "$pct" -lt 70 ]; then
+    printf "\033[32m"
+  elif [ "$pct" -lt 100 ]; then
+    printf "\033[33m"
+  else
+    printf "\033[31m"
+  fi
+}
+
+# Context gauge (spaced, like the rate-limit bars). $2 overrides the color so the
+# gauge can track the smart zone instead of the window; $3 sets the dot count.
 ctx_bar() {
-  local pct=$1 c
-  c=$(ctx_color "$pct")
-  local filled=$(( (pct + 19) / 20 ))   # round up so any usage shows ≥1 dot
-  [ "$filled" -gt 5 ] && filled=5
+  local pct=$1 c=$2 count=${3:-5}
+  [ -n "$c" ] || c=$(ctx_color "$pct")
+  local filled=$(( (pct * count + 99) / 100 ))   # round up so any usage shows ≥1 dot
+  [ "$filled" -gt "$count" ] && filled=$count
   [ "$filled" -lt 0 ] && filled=0
   local bar="" i=0
-  while [ "$i" -lt 5 ]; do
+  while [ "$i" -lt "$count" ]; do
     [ "$i" -gt 0 ] && bar="${bar} "
     if [ "$i" -lt "$filled" ]; then
       bar="${bar}${c}●\033[0m"
@@ -354,14 +377,38 @@ format_remaining_epoch() {
   fi
 }
 
+# The smart zone gets its own row above the rate limits: the window % in the
+# header says how much room is left, this says how much of it the model still
+# reads sharply. Aligned with the rate-limit lines so the three read as one block.
+print_smart_line() {
+  local pct=$1 tokens=$2 c
+  if [ -n "$smart_zone_err" ]; then
+    printf "  \033[2m✗ SMART_ZONE_TOKENS='%s' is not a number — Smart row off\033[0m\n" "$smart_zone_err"
+    return
+  fi
+  [ -n "$pct" ] || return
+  c=$(sz_color "$pct")
+  local zone; zone=$(fmt_tokens "$SMART_ZONE_TOKENS")
+  if [ "$RL_COMPACT" -eq 1 ]; then
+    # "used" stays even here: without it this row is indistinguishable from the
+    # rate-limit rows below, which fill by what's *left* — the opposite sense.
+    printf "  \033[2m%-7.7s\033[0m %b %b%s%% used\033[0m\n" \
+      "Smart" "$(ctx_bar "$pct" "$c" 5)" "$c" "$pct"
+  else
+    printf "  \033[2m%-7.7s\033[0m %b%s\033[0m %b  %b%s%% used\033[0m  \033[2m%s/%s zone\033[0m\n" \
+      "Smart" "$c" "●" "$(ctx_bar "$pct" "$c" 10)" "$c" "$pct" "$(fmt_tokens "$tokens")" "$zone"
+  fi
+}
+
 print_limit_line() {
   local label=$1 used_val=$2 reset_val=$3
   [ -n "$used_val" ] || return
   local left=$((100 - used_val))
   if [ "$RL_COMPACT" -eq 1 ]; then
-    # Very narrow: 5 spaced dots, short reset, no "left"/"Resets in"
+    # Very narrow: 5 spaced dots, short reset, no "Resets in" ("left" stays —
+    # it's what separates these rows from the Smart row, which fills by usage)
     local rem; rem=$(format_remaining_epoch "$reset_val"); rem=${rem#Resets in }; rem=${rem// /}
-    printf "  \033[2m%-7.7s\033[0m %b \033[36m%s%%\033[0m \033[2m%s\033[0m\n" \
+    printf "  \033[2m%-7.7s\033[0m %b \033[36m%s%% left\033[0m \033[2m%s\033[0m\n" \
       "$label" "$(make_bar "$left" 5)" "$left" "$rem"
   else
     printf "  \033[2m%-7.7s\033[0m %b %s  \033[36m%s%% left\033[0m  \033[2m%s\033[0m\n" \
@@ -535,6 +582,14 @@ model_badges=""
 [ -n "$output_style" ] && [ "$output_style" != "default" ] && model_badges="${model_badges} \033[35m◑${output_style}\033[0m"
 [ -n "$agent_name" ] && model_badges="${model_badges} \033[34m⛭${agent_name}\033[0m"
 
+# Smart zone: only meaningful when the window is bigger than the zone — otherwise
+# the window itself is the limit and `ctx %` already says everything.
+smart_pct=""
+if [ "$SMART_ZONE_TOKENS" -gt 0 ] 2>/dev/null && [ -n "$ctx_tokens" ] &&
+   [ "$ctx_size" -gt "$SMART_ZONE_TOKENS" ] 2>/dev/null; then
+  smart_pct=$(( ctx_tokens * 100 / SMART_ZONE_TOKENS ))
+fi
+
 # Context mini-bar (low usage = good = green) + used/total tokens — wide only
 ctx_bar_str=""
 if [ "$SHOW_CONTEXT_BAR" = "true" ] && [ "$WIDE" -eq 1 ]; then
@@ -588,6 +643,8 @@ fi
 if [ "$used" -ge "$CONTEXT_CRIT_PCT" ]; then
   printf "  \033[1;31m⚠ Context %s%% — compaction imminent\033[0m\n" "$used"
 fi
+
+print_smart_line "$smart_pct" "$ctx_tokens"
 
 # Rate limit lines
 if [ "$SHOW_RATE_LIMITS" = "true" ]; then

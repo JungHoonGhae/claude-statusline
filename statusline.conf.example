@@ -20,6 +20,7 @@
 # ── Context Thresholds ────────────────────────────────────────────────────────
 # CONTEXT_WARN_PCT=30       # Yellow warning threshold (%)
 # CONTEXT_CRIT_PCT=70       # Red critical threshold + compaction warning (%)
+# SMART_ZONE_TOKENS=120000  # Size of the "Smart" row's zone (0 = hide the row)
 
 # ── Budget Alert ──────────────────────────────────────────────────────────────
 # DAILY_BUDGET=0            # Daily budget in USD (0 = disabled)

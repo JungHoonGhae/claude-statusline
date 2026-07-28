@@ -44,6 +44,7 @@ Claude Code 기본 상태줄은 모델 이름과 비용만 보여줍니다. 다�
 
 ```
   Fable 5 high ✦ │ ctx 14% ● ○ ○ ○ ○ 143.5K/1M │ oss-qraft (main) │ PR #42 ✓ │ $50.07 · 2h 3m · ~$24/hr +1036 -49
+  Smart   ● ● ● ● ● ● ● ● ● ● ● 119% used  143.5K/120K zone
   Session ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 1h 27m
   Weekly  ● ● ● ● ● ● ● ● ○ ○  83% left  Resets in 3d 23h
   Sonnet  ● ● ● ● ● ● ● ● ● ○  95% left  Resets in 4d 15h
@@ -59,6 +60,7 @@ Claude Code 기본 상태줄은 모델 이름과 비용만 보여줍니다. 다�
 |---------|---------|
 | **헤더** | 모델 + 배지(⚡ fast mode, effort 레벨, ✦ thinking, ◑ output style, ⛭ agent), 미니 막대와 토큰 수가 함께 표시되는 컨텍스트 %(143.5K/1M, 프리미엄 임계값 초과 시 ⚠200k+ 표시), 프로젝트, git 브랜치 + dirty + ↑ahead ↓behind, PR 번호 + 리뷰 상태(클릭 가능), 세션 비용 · 소요 시간 · ~$/hr 소모율, 추가/삭제 줄 수, 선택적 세션 이름 |
 | **컴팩션 경고** | 컨텍스트가 임계값을 넘으면 빨간 경고 |
+| **스마트 존** | 모델이 또렷하게 추론하는 ~120k 토큰 구간을 얼마나 썼는지 — 1M 윈도우가 가려버리는 숫자. 게이지 + 사용 % + 토큰/구간 |
 | **사용량 한도** | Session(5h) / Weekly(7d) / 모델별 버킷(Opus, Sonnet, Fable, … 자동 감지) / Extra usage — 게이지 막대 + 남은 % + 리셋 시간 |
 | **도구 활동** | 실행 중인 도구, 완료된 도구 횟수, 활성 에이전트 |
 | **토큰 비용** | Today / Yesterday / Last 30 days — 비용 및 토큰 수 |
@@ -170,6 +172,7 @@ SHOW_SESSION_NAME=false
 # 컨텍스트 임계값
 CONTEXT_WARN_PCT=30       # 노란 경고
 CONTEXT_CRIT_PCT=70       # 빨강 + 컴팩션 경고
+SMART_ZONE_TOKENS=120000  # `Smart` 줄이 기준으로 삼는 구간 크기 (0 = 줄 숨김)
 
 # 예산 알림 (0 = 비활성)
 DAILY_BUDGET=0
@@ -188,6 +191,7 @@ DAILY_BUDGET=0
 | `SHOW_SESSION_NAME` | `false` | 헤더에 `/rename` 세션 이름 표시 |
 | `CONTEXT_WARN_PCT` | `30` | 노랑이 되는 컨텍스트 % 임계값 |
 | `CONTEXT_CRIT_PCT` | `70` | 빨강 + 컴팩션 경고가 되는 컨텍스트 % 임계값 |
+| `SMART_ZONE_TOKENS` | `120000` | `Smart` 줄의 스마트 존 크기 — 모델이 또렷하게 추론하는 구간으로, 1M 윈도우보다 훨씬 작다 (`0` = 줄 숨김) |
 | `DAILY_BUDGET` | `0` | 일일 예산 알림(USD, 0 = 비활성) |
 
 모든 옵션은 conf 파일 **또는** 환경 변수로 설정할 수 있습니다(conf 파일이 우선합니다). 상태줄은 또한 `$COLUMNS`를 사용해 좁은 터미널에서 레이아웃을 자동으로 압축합니다.

@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-07-28
+
+### Added
+- **Smart zone row.** A `Smart` line above the rate limits shows how much of the
+  *smart zone* — the ~120k-token span a model still reasons sharply over, far
+  below a 1M advertised window — the session has used. The header keeps saying
+  how full the window is; this says how much of it the model reads well. Sized
+  via `SMART_ZONE_TOKENS` (`0` hides the row), green below 70% of the zone,
+  yellow to the edge, red past it.
+
+### Changed
+- The rate-limit rows keep the word `left` on the narrowest tier, so they can't
+  be mistaken for the `Smart` row above them, which fills by what's *used*.
+
+### Fixed
+- A non-numeric `SMART_ZONE_TOKENS` now prints a dim hint instead of dropping
+  the row without a word.
 ## [1.6.0] — 2026-07-13
 
 ### Changed
@@ -135,6 +152,8 @@ All notable changes to this project are documented here. The format is based on
   tool/agent activity, and daily/monthly token costs. Plugin marketplace support,
   one-liner installer, and Windows (Git Bash / MSYS2 / WSL) support.
 
+[1.7.0]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/JungHoonGhae/claude-statusline/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/JungHoonGhae/claude-statusline/releases/tag/v1.4.1
