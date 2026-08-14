@@ -8,6 +8,29 @@
 # Dependencies: jq, curl
 # Token costs: computed from local transcripts with LiteLLM pricing (no Node.js)
 
+# ── Numeric Locale ────────────────────────────────────────────────────────────
+# Every number reaching printf arrives from jq as a dot-decimal (cost,
+# utilization, token totals). Under a locale whose decimal separator is a comma
+# — de, fr, es, it, pt, ru, pl, tr, … — printf refuses to parse them: the cost
+# prints as "$1,00" with a visible "invalid number" error, and that comma then
+# breaks the integer-cents arithmetic reading it back, so the burn rate dies with
+# a syntax error. Percentages fare worse: printf stops at the comma, its non-zero
+# exit triggers the `|| echo 0` fallback, and the two concatenate — 13.7 becomes
+# "130", rendering as "-30% left".
+#
+# LC_ALL outranks LC_NUMERIC, so pinning the numeric category is not enough on
+# its own. Demote LC_ALL to LC_CTYPE first, which keeps the character semantics
+# the user asked for while letting the numeric override take effect.
+#
+# Deliberately not LC_ALL=C: C collation counts bytes rather than characters, and
+# the session-name truncation (${#sn} / ${sn:0:23}) would then cut multi-byte
+# names mid-character.
+if [ -n "$LC_ALL" ]; then
+  export LC_CTYPE="$LC_ALL"
+  unset LC_ALL
+fi
+export LC_NUMERIC=C
+
 # ── Platform Detection ────────────────────────────────────────────────────────
 OS_TYPE="$(uname -s)"
 
