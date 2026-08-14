@@ -507,13 +507,36 @@ if [ "$SHOW_RATE_LIMITS" = "true" ]; then
 
     # Any seven_day_<bucket> with data (Opus/Sonnet/Fable/... — keys change over time).
     # Order by model capability (best first); unknown buckets keep API order after.
+    #
+    # Two response shapes carry the same thing, so read both:
+    #   old — top-level seven_day_<model> objects
+    #   new — limits[] entries with kind "weekly_scoped" and scope.model.display_name
+    # Accounts on the new shape return every seven_day_<model> as null, so scanning
+    # only the top-level keys silently drops the model lines entirely.
+    #
+    # Names are folded to the capability word when one is recognizable, so a
+    # display_name like "Claude Opus 4.5" still prints as "Opus" — the label column
+    # is 7 chars wide, and an unfolded name truncates to a useless "Claude ".
+    # Folding also lets unique_by collapse the same model arriving in both shapes.
     api_buckets=$(jq -r '
       ["fable","opus","sonnet","haiku"] as $rank
-      | [ to_entries[]
-          | select(.key | startswith("seven_day_"))
-          | select((.value | type) == "object" and .value.utilization != null)
-          | (.key | sub("^seven_day_"; "")) as $n
-          | {name: $n, used: (.value.utilization | floor), reset: (.value.resets_at // ""), rank: (($rank | index($n)) // 99)} ]
+      | ( [ to_entries[]
+            | select(.key | startswith("seven_day_"))
+            | select((.value | type) == "object" and .value.utilization != null)
+            | { name: (.key | sub("^seven_day_"; "")),
+                used: (.value.utilization | floor),
+                reset: (.value.resets_at // "") } ]
+        + [ (.limits // [])[]
+            | select(.kind == "weekly_scoped")
+            | select(.percent != null and .scope.model.display_name != null)
+            | { name: (.scope.model.display_name | ascii_downcase),
+                used: (.percent | floor),
+                reset: (.resets_at // "") } ] )
+      | map( .name as $n
+             | ( [ $rank[] | . as $r | select($n | contains($r)) ][0] ) as $fam
+             | .name = ($fam // $n)
+             | .rank = (if $fam then ($rank | index($fam)) else 99 end) )
+      | unique_by(.name)
       | sort_by(.rank, .name)
       | .[] | "\(.name)\t\(.used)\t\(.reset)"
     ' "$CACHE_FILE" 2>/dev/null)
