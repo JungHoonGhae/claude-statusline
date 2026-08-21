@@ -1,0 +1,4 @@
+{
+  "name": "claude-statusline",
+  "install": "bash .cursor/install.sh"
+}
