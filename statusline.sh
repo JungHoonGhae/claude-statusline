@@ -517,7 +517,13 @@ if [ "$SHOW_RATE_LIMITS" = "true" ]; then
     # Names are folded to the capability word when one is recognizable, so a
     # display_name like "Claude Opus 4.5" still prints as "Opus" — the label column
     # is 7 chars wide, and an unfolded name truncates to a useless "Claude ".
-    # Folding also lets unique_by collapse the same model arriving in both shapes.
+    #
+    # Folding means duplicates: the same model arriving in both shapes, or two
+    # display names folding to one capability word. They collapse to the HIGHEST
+    # utilization, never to whichever was seen first — a legacy reading of 88
+    # beside a weekly_scoped 100 would otherwise render "12% left" over an
+    # exhausted quota, the silent failure the conventions rule out. Ties go to
+    # the limits[] reading so the choice is deterministic.
     api_buckets=$(jq -r '
       ["fable","opus","sonnet","haiku"] as $rank
       | ( [ to_entries[]
@@ -525,18 +531,20 @@ if [ "$SHOW_RATE_LIMITS" = "true" ]; then
             | select((.value | type) == "object" and .value.utilization != null)
             | { name: (.key | sub("^seven_day_"; "")),
                 used: (.value.utilization | floor),
-                reset: (.value.resets_at // "") } ]
+                reset: (.value.resets_at // ""),
+                src: "legacy" } ]
         + [ (.limits // [])[]
             | select(.kind == "weekly_scoped")
             | select(.percent != null and .scope.model.display_name != null)
             | { name: (.scope.model.display_name | ascii_downcase),
                 used: (.percent | floor),
-                reset: (.resets_at // "") } ] )
+                reset: (.resets_at // ""),
+                src: "limits" } ] )
       | map( .name as $n
              | ( [ $rank[] | . as $r | select($n | contains($r)) ][0] ) as $fam
              | .name = ($fam // $n)
              | .rank = (if $fam then ($rank | index($fam)) else 99 end) )
-      | unique_by(.name)
+      | group_by(.name) | map(sort_by(.used, .src) | last)
       | sort_by(.rank, .name)
       | .[] | "\(.name)\t\(.used)\t\(.reset)"
     ' "$CACHE_FILE" 2>/dev/null)
