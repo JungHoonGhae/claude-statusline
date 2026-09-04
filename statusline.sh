@@ -602,7 +602,7 @@ if [ -n "$ctx_tokens" ] && [ "$ctx_size" -gt 0 ] 2>/dev/null && [ "$WIDE" -eq 1 
   # crossing 200k means premium billing (not just "context full" — the
   # compaction warning already covers that on standard 200k models).
   if [ "$exceeds_200k" = "true" ] && [ "$ctx_size" -gt 200000 ] 2>/dev/null; then
-    ctx_detail="${ctx_detail} \033[33m⚠200k+\033[0m"
+    ctx_detail="${ctx_detail} \033[33m⚠ 200k+\033[0m"
   fi
 fi
 

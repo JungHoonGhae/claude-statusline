@@ -58,7 +58,7 @@ This statusline fixes all of that.
 
 | Section | Details |
 |---------|---------|
-| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking, ◑ output style, ⛭ agent), context % with mini-bar and token count (143.5K/1M, marked ⚠200k+ past the premium threshold), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, optional session name |
+| **Header** | Model + badges (⚡ fast mode, effort level, ✦ thinking, ◑ output style, ⛭ agent), context % with mini-bar and token count (143.5K/1M, marked ⚠ 200k+ past the premium threshold), project, git branch + dirty + ↑ahead ↓behind, PR # + review state (clickable), session cost · duration · ~$/hr burn rate, lines +/-, optional session name |
 | **Compaction Warning** | Red warning when context exceeds critical threshold |
 | **Smart Zone** | How much of the ~120k-token span the model still reasons sharply over has been used — the number a 1M window hides. Gauge + % used + tokens/zone |
 | **Rate Limits** | Session (5h) / Weekly (7d) / per-model buckets (Opus, Sonnet, Fable, … auto-detected) / Extra usage — gauge bar + % left + reset time |
@@ -75,7 +75,7 @@ This statusline fixes all of that.
 | `✦` | Extended thinking enabled |
 | `◑explanatory` | Active output style (only when not `default`) |
 | `⛭security-reviewer` | Active agent (during `--agent` sessions) |
-| `⚠200k+` | Past the 200k premium long-context billing threshold (>200k-window models only) |
+| `⚠ 200k+` | Past the 200k premium long-context billing threshold (>200k-window models only) |
 | `PR #42 ✓` | Open PR — ✓ approved · ● pending · ✗ changes requested · ◌ draft |
 | `+1036 -49` | Lines added/removed this session |
 

@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+- The premium long-context marker now reads `⚠ 200k+` with a space: `⚠` is
+  rendered two cells wide by many terminals, so the sign overlapped the `2`.
+
 ## [1.7.0] — 2026-07-28
 
 ### Added
