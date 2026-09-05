@@ -166,6 +166,51 @@ eval "$(jq -r '
   @sh "stdin_7d_reset=\(.rate_limits.seven_day.resets_at // "")"
 ' <<< "$input")"
 
+# ── Ultracode ─────────────────────────────────────────────────────────────────
+# Ultracode = xhigh effort plus standing dynamic-workflow orchestration, scoped
+# to the session. Claude Code does not put it in the stdin payload — effort.level
+# reads "xhigh" either way — so the state is read from the transcript, the most
+# recent event winning: the ultra_effort_enter / ultra_effort_exit attachments
+# Claude Code writes once per turn, and the output of /effort and of the /model
+# picker's effort column (a whole local_command record, or a legacy user line
+# that is nothing but the wrapped output). No event yet → the launch state from
+# ~/.claude/settings.json (`ultracode: true` seeds every new session).
+# Only the last 4 MB of the transcript are scanned, so a refresh stays cheap on
+# very long sessions; an event older than that falls back to the launch state.
+# Known limits: a resumed session shows its last event until the next turn
+# writes a corrective one; project/local settings, --settings on the CLI and
+# a disabled dynamic-workflows toggle are not consulted.
+ultracode=false
+if [ "$effort" = "xhigh" ]; then
+  uc_event=""
+  if [ -n "$transcript_path" ] && [ -s "$transcript_path" ]; then
+    uc_event=$(tail -c 4194304 -- "$transcript_path" 2>/dev/null \
+      | grep -aE '"ultra_effort_(enter|exit)"|<local-command-stdout>' | jq -R -r '
+      (fromjson? // empty) | select(type == "object") |
+      def cmd: capture("^<local-command-stdout>(?<s>[^<]*)</local-command-stdout>\\s*$").s;
+      def verdict:
+        if test("^Set effort level to ultracode") or test("^Set model to .* with `ultracode` effort")
+          or test("^CLAUDE_CODE_EFFORT_LEVEL=.* clear it and ultracode takes over") then "on"
+        elif test("^Set effort level to ") or test("^Effort level set to ") or test("^Effort set to auto")
+          or test("^Cleared effort from settings") or test("^Effort \u0027[^\u0027]*\u0027 exceeds your organization")
+          or test("^Set model to .* with `[^`]+` effort") or test("^CLAUDE_CODE_EFFORT_LEVEL=")
+          or test("^Not applied: CLAUDE_CODE_EFFORT_LEVEL=")
+          or (test("^Not applied: the launch-effort pin") and (test("ultracode needs xhigh") | not)) then "off"
+        else empty end;
+      if .type == "attachment" then
+        (if .attachment.type == "ultra_effort_enter" then "on"
+         elif .attachment.type == "ultra_effort_exit" then "off" else empty end)
+      elif .type == "system" and .subtype == "local_command" and (.content | type) == "string" then (.content | cmd | verdict)
+      elif .type == "user" and (.message.content | type) == "string" then (.message.content | cmd | verdict)
+      else empty end' 2>/dev/null | tail -n 1)
+  fi
+  case "$uc_event" in
+    on)  ultracode=true ;;
+    off) ultracode=false ;;
+    *)   [ "$(jq -r '.ultracode // false' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json" 2>/dev/null)" = "true" ] && ultracode=true ;;
+  esac
+fi
+
 # ── Project & Branch ──────────────────────────────────────────────────────────
 project=$(basename "$cwd" 2>/dev/null)
 
@@ -577,7 +622,12 @@ echo ""
 # style and agent show only when set (default/absent = no badge = no noise).
 model_badges=""
 [ "$fast_mode" = "true" ] && model_badges="${model_badges} \033[36m⚡fast\033[0m"
-[ -n "$effort" ] && model_badges="${model_badges} \033[2m${effort}\033[0m"
+# Ultracode replaces the bare effort badge: it *is* xhigh, plus workflows.
+if [ "$ultracode" = "true" ]; then
+  model_badges="${model_badges} \033[1;35multracode\033[0m"
+elif [ -n "$effort" ]; then
+  model_badges="${model_badges} \033[2m${effort}\033[0m"
+fi
 [ "$thinking" = "true" ] && model_badges="${model_badges} \033[2m✦\033[0m"
 [ -n "$output_style" ] && [ "$output_style" != "default" ] && model_badges="${model_badges} \033[35m◑${output_style}\033[0m"
 [ -n "$agent_name" ] && model_badges="${model_badges} \033[34m⛭${agent_name}\033[0m"

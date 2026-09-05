@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **Ultracode badge.** When ultracode is active (`/effort ultracode`, the
+  `/model` picker, or `ultracode: true` in `settings.json`) the header shows a
+  bold `ultracode` badge in place of the bare `xhigh` effort badge. Claude Code
+  reports `xhigh` on stdin either way, so the state is read from the last 4 MB
+  of the transcript (the `ultra_effort_enter`/`exit` events and the `/effort` +
+  `/model` command output), falling back to the launch state in `settings.json`.
+
 ## [1.7.0] — 2026-07-28
 
 ### Added
